@@ -74,7 +74,6 @@ public class AppCore {
             return false;
         }
 
-        logger.info(ltag, "CREATED " + idPath);
         return true;
     }
 
@@ -104,9 +103,6 @@ public class AppCore {
         if (!createDirectory(Config.DIR_ACCOUNTS))
             return false;
         
-        if (!createDirectory(Config.DIR_ID))
-            return false;
-        
         if (!createDirectory(Config.DIR_MAIN_LOGS))
             return false;
         
@@ -115,9 +111,7 @@ public class AppCore {
         
         if (!createDirectory(Config.DIR_BACKUPS))
             return false;
-        
-        if (!createDirectory(Config.DIR_EMAIL_TEMPLATES))
-            return false;
+
         
         return true;
     }
@@ -126,29 +120,20 @@ public class AppCore {
         String[] folders = new String[]{
             Config.DIR_BANK,
             Config.DIR_COUNTERFEIT,
-            Config.DIR_CONFIG,
             Config.DIR_DEPOSIT,
             Config.DIR_DETECTED,
             Config.DIR_EXPORT,
-            Config.DIR_EMAILOUT,
             Config.DIR_FRACKED,
-            Config.DIR_GALLERY,
             Config.DIR_IMPORT,
+            Config.DIR_CONFIG,
             Config.DIR_IMPORTED,
             Config.DIR_LOGS,
             Config.DIR_LOST,
-            Config.DIR_MIND,
-            Config.DIR_PARTIAL,
-            Config.DIR_PAYFORWARD,
             Config.DIR_PREDETECT,
             Config.DIR_RECEIPTS,
-            Config.DIR_REQUESTS,
-            Config.DIR_REQUESTRESPONSE,
             Config.DIR_SENT,
             Config.DIR_SUSPECT,
-            Config.DIR_TRASH,
-            Config.DIR_TRUSTEDTRANSFER,
-            Config.DIR_VAULT
+            Config.DIR_TRASH
         };
 
         createDirectory(Config.DIR_ACCOUNTS + File.separator + user);

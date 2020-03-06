@@ -2,7 +2,7 @@ package assetwallet.core;
 
 public class Config {
 
-    public static String DIR_ROOT = "CloudCoinWallet";
+    public static String DIR_ROOT = "AssetWallet";
     public static String DIR_BANK = "Bank";
     public static String DIR_COUNTERFEIT = "Counterfeit";
     public static String DIR_DANGEROUS = "Dangerous";
@@ -201,4 +201,7 @@ public class Config {
     final public static String PNG_TEMPLATE_NAME = "template.png";
 
     final public static String TAG_RANDOM = "random";
+    
+    
+    final public static String DEFAULT_NAME = "Default";
 }

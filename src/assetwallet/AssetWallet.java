@@ -25,6 +25,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import assetwallet.core.AppCore;
 import assetwallet.core.Config;
 import assetwallet.core.RAIDA;
+import assetwallet.core.ServantManager;
 
 
 /**
@@ -54,6 +55,8 @@ public class AssetWallet  {
         
     ProgramState ps;
     WLogger wl;
+    
+    ServantManager sm;
     
     MyButton continueButton;
     
@@ -94,12 +97,27 @@ public class AssetWallet  {
     
         showScreen();
     }
+    
 
     public void initSystem() {
         wl = new WLogger();
         
         String home = System.getProperty("user.home");
         //home += File.separator + "CloudCoinWallet";
+
+        resetState();
+        
+        sm = new ServantManager(wl, home);
+        if (!sm.init()) {
+            resetState();
+            ps.errText = "Failed to init program. Make sure you have correct folder permissions (" + home + ")";
+            return;
+        }
+
+        if (!sm.initUser(Config.DEFAULT_NAME, "", "")) {
+            ps.errText = "Failed to init Wallet";
+            return;
+        }
 
         AppCore.readConfig();
         resetState();
