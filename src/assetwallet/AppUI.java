@@ -16,6 +16,9 @@ import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.font.TextAttribute;
@@ -494,6 +497,10 @@ public class AppUI {
 
     public static JScrollPane setupTable(JTable table, String[] columnNames, String[][] data, DefaultTableCellRenderer r) {
         final String[] fcolumnNames = columnNames;
+        JScrollPane scrollPane = new JScrollPane(table);
+        if (data == null)
+            return scrollPane;
+        
         DefaultTableModel model = new DefaultTableModel(data.length, data[0].length - 1) {
             @Override
             public String getColumnName(int col) {        
@@ -548,7 +555,7 @@ public class AppUI {
         
         
         //This is the wallet table size 
-        JScrollPane scrollPane = new JScrollPane(table);
+        
         AppUI.setSize(scrollPane, 660, 325);
         scrollPane.getVerticalScrollBar().setUI(new BasicScrollBarUI() {       
             @Override
@@ -635,4 +642,42 @@ public class AppUI {
         }
     }
 
+    public static void getGBRow(JComponent parent, JComponent[] items, int y, GridBagLayout gridbag) {
+        GridBagConstraints c = new GridBagConstraints();
+  
+        c.anchor = GridBagConstraints.NORTH;
+        c.insets = new Insets(20, 10, 10, 10);    
+        c.gridy = y;
+        c.weightx = 1;
+        c.weighty = 0;
+        c.gridx = GridBagConstraints.RELATIVE;
+        
+        c.gridwidth = 1;
+        if (items.length == 1)
+            c.gridwidth = 4;
+             
+        System.out.println("w="+c.gridwidth);
+                
+        for (int i = 0; i < items.length; i++) {
+            if (items[i] instanceof JLabel)
+                AppUI.setCommonFont(items[i]);
+         
+            gridbag.setConstraints(items[i], c);
+            parent.add(items[i]);
+        }
+    }
+    
+    public static void GBPad(JComponent parent, int y, GridBagLayout gridbag) {
+        GridBagConstraints c = new GridBagConstraints();
+        JPanel padder = new JPanel();
+        AppUI.noOpaque(padder);
+        c.anchor = GridBagConstraints.NORTHWEST;
+        c.insets = new Insets(0, 0, 0, 0);    
+        c.gridx = GridBagConstraints.RELATIVE;
+        c.gridy = y;
+        c.weightx = 1;
+        c.weighty = 1;
+        gridbag.setConstraints(padder, c);
+        parent.add(padder);
+    }
 }

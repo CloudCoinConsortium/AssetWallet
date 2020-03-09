@@ -111,8 +111,7 @@ public class ServantRegistry {
         String packageName = getClass().getPackage().getName();
         String targetClass;
 
-        targetClass = packageName.replaceAll(".core$", "") + "." + name + "." + name;
-
+        targetClass = packageName.replaceAll(".core$", "") + ".core." + name + "." + name;
         if (getServant(name) == null)
             return false;
 

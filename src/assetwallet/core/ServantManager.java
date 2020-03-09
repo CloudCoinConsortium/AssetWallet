@@ -56,6 +56,7 @@ public class ServantManager {
     String home;
     String user;
     Hashtable<String, Wallet> wallets;
+    Hashtable<String, Asset> assets;
  
     public ServantManager(GLogger logger, String home) {
         this.logger = logger;
@@ -126,7 +127,13 @@ public class ServantManager {
         }
     }
     
-    
+    public void setAssets(Asset[] assets) {
+        this.assets = new Hashtable<String, Asset>();
+        
+        for (int i = 0; i < assets.length; i++) {
+            this.assets.put("" + assets[i].sn, assets[i]);
+        }
+    }
     
     public void initCloudWallet(Asset cc, String name) {
         Wallet wobj = new Wallet(name, "", false, "", logger);
@@ -172,38 +179,16 @@ public class ServantManager {
             sr.getServant("Vaulter").putConfigValue("status", "on");
             sr.getServant("Vaulter").putConfigValue("password", AppCore.getMD5(password));
         }
-        
-        if (!writeConfig(wallet)) {
-            logger.error(ltag, "Failed to write conifg");
-            return false;
-        }
               
         initWallet(wallet, password);
               
         return true;
     }
 
-    public boolean writeConfig(String user) {
-        String config = "", ct;
-        
-        for (String name : sr.getServantKeySet()) {
-            ct = sr.getServant(name).getConfigText();
-            config += ct;
-        }
-
-        String configFilename = AppCore.getUserConfigDir(user) + File.separator + "config.txt";
-        
-        if (!AppCore.saveFile(configFilename, config)) {
-            logger.error(ltag, "Failed to save config");
-            return false;
-        }
-        
-        return true;
-    }
-    
     public void startEchoService(CallbackInterface cb) {
-        if (sr.isRunning("Echoer"))
+        if (sr.isRunning("Echoer")) {
             return;
+        }
         
 	Echoer e = (Echoer) sr.getServant("Echoer");
 	e.launch(cb);
@@ -255,12 +240,12 @@ public class ServantManager {
 
     
     
-    public void startShowCoinsService(CallbackInterface cb) {
+    public void startShowCoinsService(Asset[] assets, CallbackInterface cb) {
         if (sr.isRunning("ShowCoins"))
             return;
                 
 	ShowCoins sc = (ShowCoins) sr.getServant("ShowCoins");
-	sc.launch(cb);
+	sc.launch(assets, cb);
     }
     
     public void startLossFixerService(CallbackInterface cb) {

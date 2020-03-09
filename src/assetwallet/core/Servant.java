@@ -126,8 +126,6 @@ public class Servant {
         configHT = new Hashtable<String, String>();
         
         setLtag();
-        readConfig();
-        setConfig();
     }
     
     public void launch(CallbackInterface cb) {}
@@ -251,69 +249,6 @@ public class Servant {
         data += "</" +name.toUpperCase() + ">";
         
         return data;
-    }
-    
-    private boolean readConfig() {
-        String configFilename = AppCore.getUserConfigDir(user) + File.separator + "config.txt";
-        byte[] data;
-        String xmlData;
-
-        //logger.debug(ltag, "reading " + configFilename);
-        File file = new File(configFilename);
-        try {
-            if (!file.exists()) {
-                // No probleam, actually. Will use default values
-                return false;
-            } 
-            
-            data = Files.readAllBytes(Paths.get(configFilename));
-            xmlData = new String(data);
-        } catch (IOException e) {
-            logger.error(ltag, "Failed to read config file: " + e.getMessage());
-            return false;
-        }
-
-        return parseConfigData(xmlData);
-    }
-
-    private boolean parseConfigData(String xmlData) {
-        String tagName = this.name.toUpperCase();
-        if (xmlData.indexOf("<" + tagName + ">") == -1)
-            return true;
-        
-        String regex = ".*?<" + tagName + ">(.*)</" + tagName + ">.*";
-
-        xmlData = xmlData.replaceAll("\\n", "***");
-        xmlData = xmlData.replaceAll("\\r", "");
-        xmlData = xmlData.replaceAll("\\t", "");
-        xmlData = xmlData.replaceAll(" ", "");
-        
-        xmlData = xmlData.replaceAll(regex, "$1");
-        
-        String[] parts = xmlData.split("\\*\\*\\*");   
-        for (String item : parts) {
-            if (item.equals(""))
-                continue;
-
-            String[] subParts = item.split(":");
-            if (subParts.length < 2) {
-                logger.error(ltag, "Failed to parse config value " + item);
-                continue;
-            }
-
-            String k, rest = "";
-
-            k = subParts[0].trim();
-            rest = subParts[1].trim();
-
-            for (int i = 2; i < subParts.length; i++)
-                rest += ":" + subParts[i].trim();
-
-            logger.debug(ltag, "serv " + name + "-> " + k + ":" + rest);
-            configHT.put(k, rest);
-        }
-
-        return true;
     }
     
     public void setConfig() {
@@ -500,49 +435,6 @@ public class Servant {
     protected void cleanPrivateLogDir() {
         cleanDir(privateLogDir);
     }
-
-    protected Asset getIDcc(int sn) {
-        String fullDirIDPath = AppCore.getIDDir();
-        Asset cc = null;
-
-        File dirObj = new File(fullDirIDPath);
-        for (File file: dirObj.listFiles()) {
-            if (file.isDirectory())
-                continue;
-
-            if (!AppCore.hasCoinExtension(file))
-                continue;
-            
-            logger.debug(ltag, "Parsing " + file);
-
-            try {
-                cc = new Asset(file.toString());
-            } catch (JSONException e) {
-                logger.error(ltag, "Failed to parse JSON: " + e.getMessage());
-                continue;
-            }
-
-            logger.info(ltag, "Found SN: " + cc.sn);
-            if (cc.sn != sn)
-                continue;
-
-            break;
-        }
-
-        return cc;
-    }
-
-    protected void setSenderRAIDA() {
-        String[] urls = new String[RAIDA.TOTAL_RAIDA_COUNT];
-
-        for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {
-         //   urls[i] = "https://s" + i + "." + Config.SENDER_DOMAIN;
-            urls[i] = "https://raida" + i + ".cloudcoin.global";
-        }
-
-        raida.setExactUrls(urls);
-    }
-
 
     protected boolean collectedEnough(int[] values) {
         for (int i = 0; i < values.length; i++) {

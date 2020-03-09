@@ -326,40 +326,10 @@ public class FrackFixer extends Servant {
                 doRealFix(i, ccactive);            
                 ccactive.clear();
             }         
-        }
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        }    
         
         logger.debug(ltag, "Time to move coins");
         doMove(ccall);
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
 
         nfr = new FrackFixerResult();
         fr.failed = AppCore.getFilesCount(Config.DIR_FRACKED, user);

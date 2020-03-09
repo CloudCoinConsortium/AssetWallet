@@ -125,7 +125,6 @@ public class AppCore {
             Config.DIR_EXPORT,
             Config.DIR_FRACKED,
             Config.DIR_IMPORT,
-            Config.DIR_CONFIG,
             Config.DIR_IMPORTED,
             Config.DIR_LOGS,
             Config.DIR_LOST,
@@ -146,16 +145,6 @@ public class AppCore {
     static public String getRootPath() {
        return rootPath.toString();
     }
-  
-    static public String getUserConfigDir(String user) {
-       File f;
-
-       f = new File(rootPath, Config.DIR_ACCOUNTS);
-       f = new File(f, user);
-       f = new File(f, Config.DIR_CONFIG);
-
-       return f.toString();
-   }
 
    static public String getBackupDir() {
        File f = new File(rootPath, Config.DIR_BACKUPS);
@@ -165,12 +154,6 @@ public class AppCore {
    
    static public String getTemplateDir() {
        File f = new File(rootPath, Config.DIR_TEMPLATES);
-       
-       return f.toString();
-   }
-   
-   static public String getIDDir() {
-       File f = new File(rootPath, Config.DIR_ID);
        
        return f.toString();
    }
@@ -1154,6 +1137,12 @@ public class AppCore {
                 Config.DEFAULT_MAX_COINS_MULTIDETECT = oi;
             }
             
+            oi = o.optInt("inited", -1);
+            if (oi != -1) {
+                logger.debug(ltag, "Inited: " + oi);
+                Config.CONFIG_INITED = oi;
+            }
+            
             os = o.optString("export_dir");
             if (os != null) {
                 logger.debug(ltag, "Export dir: " + os);
@@ -1165,12 +1154,6 @@ public class AppCore {
                 logger.debug(ltag, "Deposit dir: " + os);
                 
                 Config.DEFAULT_DEPOSIT_DIR = os;
-            }
-            
-            os = o.optString("ddnssn_server");
-            if (os != null) {
-                logger.debug(ltag, "DDNSSN Server: " + os);
-                Config.DDNSSN_SERVER = os;
             }
         } catch (JSONException e) {
             logger.error(ltag, "Failed to parse config file: " + e.getMessage());
@@ -1193,7 +1176,7 @@ public class AppCore {
                 + "\"max_coins\": " + Config.DEFAULT_MAX_COINS_MULTIDETECT + ", "
                 + "\"export_dir\": \"" + edir + "\", "
                 + "\"deposit_dir\": \"" + ddir + "\", "
-                + "\"ddnssn_server\": \"" + Config.DDNSSN_SERVER + "\""
+                + "\"inited\" : \"1\""
                 + "}";
         
         File f = new File(globalConfigFilename);
@@ -1201,90 +1184,7 @@ public class AppCore {
         
         return AppCore.saveFile(globalConfigFilename, data);
     }
-    
-    public static int[] getSNSOverlap(int[][] sns) {
-        int[] vsns;
-        
-        logger.debug(ltag, "Getting overlapped sns");
-        HashMap<Integer, Integer> hm = new HashMap<Integer, Integer>();
-
-        for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {
-            for (int j = 0; j < sns[i].length; j++) {
-                int sn = sns[i][j];
-                
-                if (!hm.containsKey(sn)) {
-                    hm.put(sn, 1);                 
-                    continue;
-                }
-                
-                int cnt = hm.get(sn);
-                cnt++;
-                
-                hm.put(sn, cnt);
-            }
-        }
-             
-        int valid = 0;
-        Iterator it = hm.entrySet().iterator();
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            
-            int sn = (int) pair.getKey();
-            int cnt = (int) pair.getValue();
-            
-            if (cnt < RAIDA.TOTAL_RAIDA_COUNT - Config.MAX_FAILED_RAIDAS_TO_SEND) {
-                logger.debug(ltag, "Skipping coin " + sn + ". Only " + cnt + " RAIDAs think it is ok");
-                continue;
-            }
-            
-            valid++;
-        }
-
-        logger.debug(ltag, "Number of valid coins: " + valid);
-        
-        int rsns[] = new int[valid];
-        
-        it = hm.entrySet().iterator();
-        int idx = 0;
-        while (it.hasNext()) {
-            Map.Entry pair = (Map.Entry) it.next();
-            
-            int sn = (int) pair.getKey();
-            int cnt = (int) pair.getValue();
-            
-            if (cnt < RAIDA.TOTAL_RAIDA_COUNT - Config.MAX_FAILED_RAIDAS_TO_SEND) {
-                logger.debug(ltag, "Skipping coin " + sn + ". Only " + cnt + " RAIDAs think it is ok");
-                continue;
-            }
-            
-            rsns[idx] = sn;
-            idx++;
-        }
-        
-        return rsns;
-    }  
-    
-    public static int getChangeMethod(int denomination) {
-        int method = 0;
-        
-        switch (denomination) {
-            case 250:
-                method = Config.CHANGE_METHOD_250E;
-                break;
-            case 100:
-                method = Config.CHANGE_METHOD_100E;
-                break;
-            case 25:
-                method = Config.CHANGE_METHOD_25B;
-                break;
-            case 5:
-                method = Config.CHANGE_METHOD_5A;
-                break;
-        }
-        
-        return method;
-    }
-    
+ 
     public static String maskStr(String key, String data) {
         String result = data.replaceAll(key + "([A-Fa-f0-9]{28})", key + "***");
         return result;
@@ -1307,65 +1207,7 @@ public class AppCore {
       
         return 0;
     }
-    
-    public static void appendSkySentCoinTransaction(String from, String to, int tosn, int amount, String memo) {
-        String rMemo = memo.replaceAll("\r\n", " ").replaceAll("\n", " ").replaceAll(",", " ");
-        String fstr, result;
-        String date = AppCore.getCurrentDate();
-        
-        fstr = date + "," + from + "," + to + "," + tosn + "," + amount + "," +memo + ", closed";
-        
-        String fileName = AppCore.getLogDir() + File.separator + Config.SENT_SKYCOINS_FILENAME; 
-        logger.debug(ltag, "Append transaction: " + fstr + " s="+fileName);
-        
-        result = "\r\n" + fstr;
-        
-        if (!AppCore.saveFileAppend(fileName, result, true)) {
-            logger.debug(ltag, "Failed to write to the SkySent log. Maybe this file is open");
-            return;
-        }
-    }
 
-    public static void rmSentCoins() {
-        String fileName = AppCore.getLogDir() + File.separator + Config.SENT_SKYCOINS_FILENAME;
-        File f = new File(fileName);
-        f.delete();
-    }
-    
-    public static String[][] getSentCoins() {
-        String fileName = AppCore.getLogDir() + File.separator + Config.SENT_SKYCOINS_FILENAME;
-        
-        String data = AppCore.loadFile(fileName);
-        if (data == null)
-            return null;
-        
-        String[] parts = data.split("\\r?\\n");
-        
-        String[] tmp;
-        
-        int j = 0;
-        for (int i = 0; i < parts.length; i++) {
-            tmp = parts[i].split(",");
-            if (tmp.length != 7) {
-                continue;
-            }
-            j++;
-        }
-
-        int r = 0;
-        String[][] rv = new String[j][];
-        for (int i = 0; i < parts.length; i++) {
-            tmp = parts[i].split(",");
-            if (tmp.length != 7) {
-                continue;
-            }
-
-            rv[r++] = tmp;
-        }
-        
-        return rv;         
-    }
-    
     
     public static boolean hasCoinExtension(File file) {
         String f = file.toString().toLowerCase();
@@ -1376,86 +1218,46 @@ public class AppCore {
         
         return false;        
     }
-    
-    public static Asset[] getCoinsInDir(String dir) {
-        File dirObj = new File(dir);
-        if (!dirObj.exists()) {
-            return null;
-        }
+ 
+    public static Asset[] getCoinsInDirs(String dir0, String dir1, String user) {
+        String[] dirs = new String[2];
+        ArrayList<Asset> ccs = new ArrayList<Asset>();
+        
+        dirs[0] = AppCore.getUserDir(dir0, user);
+        dirs[1] = AppCore.getUserDir(dir1, user);
         
         int c = 0;
-        for (File file: dirObj.listFiles()) {
-            if (file.isDirectory())
+        for (int i = 0; i < dirs.length; i++) {
+            File dirObj = new File(dirs[i]);
+            if (!dirObj.exists()) {
+                logger.debug(ltag, "Directory " + dirs[i] + " doesn't exist");
                 continue;
+            }
+
+            for (File file: dirObj.listFiles()) {
+                if (file.isDirectory())
+                    continue;
             
-            if (!AppCore.hasCoinExtension(file))
-                continue;
+                if (!AppCore.hasCoinExtension(file))
+                    continue;
                
-            Asset cc;
-            try {
-                cc = new Asset(file.getAbsolutePath());
-            } catch (JSONException e) {
-                continue;
-            }
-                    
-            c++;
-        }
-        
-        int i = 0;
-        Asset[] ccs = new Asset[c];
-        for (File file: dirObj.listFiles()) {
-            if (file.isDirectory())
-                continue;
-            
-            if (!AppCore.hasCoinExtension(file))
-                continue;
-            
-            Asset cc;
-            try {
-                 cc = new Asset(file.getAbsolutePath());
-            } catch (JSONException e) {
-                continue;
-            }
-                
-            ccs[i] = cc;
-            i++;
-        }
-        
-        return ccs;
-    }
- 
-    public static String[][] parseBillPayCsv(String filename) {
-        String [][] rvs;
-        BufferedReader reader;
-        ArrayList<String> as = new ArrayList<String>();
-	try {            
-            reader = new BufferedReader(new FileReader(filename));
-            String line = reader.readLine();
-            while (line != null) {
-                as.add(line);
-		line = reader.readLine();
-            }
-            reader.close();
-            
-            int i = 0;
-            rvs = new String[as.size()][];
-            for (String s : as) {
-                String[] parts = s.split(",");
-                if (parts.length != 9) {
-                    logger.debug(ltag, "Failed to parse string: " + s);
-                    return null;
+                System.out.println("f="+file.getAbsolutePath());
+                Asset cc;
+                try {
+                    cc = new Asset(file.getAbsolutePath());
+                } catch (JSONException e) {
+                    continue;
                 }
-                
-                rvs[i++] = parts;
+                    
+                ccs.add(cc);
             }
+        }
             
-	} catch (IOException e) {
-            logger.debug(ltag, "Failed to read file: " + filename + ": " +e.getMessage());
-            return null;
-	}
-        
-        return rvs;
+        Asset[] assets = ccs.toArray(new Asset[ccs.size()]);
+
+        return assets;     
     }
+    
     
     public static Map<String, Properties> parseINI(Reader reader) throws IOException {
         Map<String, Properties> result = new HashMap();
@@ -1475,54 +1277,6 @@ public class AppCore {
             }
         }.load(reader);
         return result;
-    }
-    
-    public static String getEmailTemplate(String template, int amount) {
-        String fname = AppCore.rootPath + File.separator + Config.DIR_EMAIL_TEMPLATES + File.separator + template;
-        File f = new File(fname);
-        
-        String fdata = AppCore.loadFile(fname);
-        if (fdata == null) {
-            logger.debug(ltag, "Failed to load email template: " + fname);
-            return null;
-        }
-        
-        fdata = fdata.replaceAll("%amountToSend%", "" + amount);
-      
-        return fdata;
-    }
-    
-    public static boolean checkEmailTemplate(String template) {
-        String fname = AppCore.rootPath + File.separator + Config.DIR_EMAIL_TEMPLATES + File.separator + template;
-        File f = new File(fname);
-        if (!f.exists()) {
-            logger.debug(ltag, "FileTemplate " + fname + " doesn't exist");
-            return false;
-        }
-        
-        return true;
-    }
-    
-    
-    public static int getTotalToSend(String[] line) {
-        int total, s1, s5, s25, s100, s250;
-        total = s1 = s5 = s25 = s100 = s250 = 0;
-            
-        try {
-            total = Integer.parseInt(line[1]);
-            s1 = Integer.parseInt(line[2]);
-            s5 = Integer.parseInt(line[3]);
-            s25 = Integer.parseInt(line[4]);
-            s100 = Integer.parseInt(line[5]);
-            s250 = Integer.parseInt(line[6]);
-        } catch (NumberFormatException e) {
-            return -1;
-        }
-            
-        if (total == 0)
-            total = s1 + s5 + s25 + s100 + s250;
-        
-        return total;
     }
     
     public static int basicPngChecks(byte[] bytes) {    
@@ -1580,5 +1334,29 @@ public class AppCore {
         return checksumValue;
     }
 
+    public static int getRaidaMirror(int raidaIdx) {
+        System.out.println("idx="+raidaIdx+" tc="+RAIDA.TOTAL_RAIDA_CNT);
+        if (raidaIdx >= RAIDA.TOTAL_RAIDA_COUNT)
+            return -1;
+        
+        if (raidaIdx < RAIDA.TOTAL_RAIDA_COUNT - 1)
+            return raidaIdx + 1;
+        
+        return 0;
+    }
+    
+    public static int getRaidaMirror2(int raidaIdx) {
+        if (raidaIdx >= RAIDA.TOTAL_RAIDA_COUNT)
+            return -1;
+
+        if (raidaIdx < RAIDA.TOTAL_RAIDA_COUNT - 2)
+            return raidaIdx + 2;
+        
+        if (raidaIdx < RAIDA.TOTAL_RAIDA_COUNT - 1)
+            return 1;
+        
+        return 0;
+    }
+    
     
 }

@@ -8,7 +8,8 @@ import java.util.Date;
 import java.util.Calendar;
 
 public class Asset {
-
+        Object privateData;
+    
 	public int nn; 
 	public int sn; 
 	public String[] ans; 
@@ -46,7 +47,7 @@ public class Asset {
                 throw(new JSONException("Failed to open file"));
 
             JSONObject o = new JSONObject(data);
-            JSONArray incomeJsonArray = o.getJSONArray("cloudcoin");
+            JSONArray incomeJsonArray = o.getJSONArray("celebrium");
 
             JSONObject childJSONObject = incomeJsonArray.getJSONObject(0);
 
@@ -134,6 +135,14 @@ public class Asset {
 		return result;
 	}
 
+        public void setPrivate(Object obj) {
+            this.privateData = obj;
+        }
+        
+        public Object getPrivate() {
+            return this.privateData;
+        }
+        
 	public static String[] toStringArray(JSONArray array) {
 		if (array == null)
 			return null;

@@ -65,7 +65,7 @@ public class Unpacker extends Servant {
             logger.error(ltag, "No such dir " + fullPath);
             return -1;
         }
-               
+
         for (File file: dirObj.listFiles()) {
             if (file.isDirectory())
                 continue;
@@ -164,20 +164,7 @@ public class Unpacker extends Servant {
             globalResult.errText = "Error. Coin " + sn + " exists in the Bank";
             return;
         }*/
-        
-        
-        sn = checkCoinsInFolder(Config.DIR_VAULT);
-        if (sn == -1) {
-            globalResult.status = UnpackerResult.STATUS_ERROR;
-            return;
-        }
-        /*
-        if (sn != 0) {
-            globalResult.status = UnpackerResult.STATUS_ERROR;
-            globalResult.errText = "Error. Coin " + sn + " exists in the Vault";
-            return;
-        }
-        */
+
         sn = checkCoinsInFolder(Config.DIR_FRACKED);
         if (sn == -1) {
             globalResult.status = UnpackerResult.STATUS_ERROR;
@@ -421,7 +408,7 @@ public class Unpacker extends Servant {
 
         try {
             JSONObject o = new JSONObject(data);
-            incomeJsonArray = o.getJSONArray("cloudcoin");
+            incomeJsonArray = o.getJSONArray("celebrium");
 
             ccs = new Asset[incomeJsonArray.length()];
             for (int i = 0; i < incomeJsonArray.length(); i++) {

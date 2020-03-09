@@ -61,6 +61,7 @@ public class Config {
     public static int ECHO_TIMEOUT = 5000;
 
 
+    public static int CONFIG_INITED = 0;
 
     public static int MAX_ALLOWED_FAILED_RAIDAS = 3;
 
@@ -116,8 +117,6 @@ public class Config {
 
     public static String JPEG_MARKER = "01C34A46494600010101006000601D05";
 
-
-    public static String SENDER_DOMAIN = "teleportnow.cc";
 
     public static int RAIDANUM_TO_QUERY_BY_DEFAULT = 7;
     public static int RAIDANUM_TO_QUERY_REQUEST_CHANGE = 7;
@@ -186,11 +185,7 @@ public class Config {
     final public static int MAX_READ_TIMEOUT = 120000;
     
     
-    public static int PUBLIC_CHANGE_MAKER_ID = 2;
-    
-    
-    public static int SECONDS_TO_AGGREGATE_ENVELOPES = 30;
-    
+
     public static int MAX_COUNTERFEIT_RAIDAS_TO_SEND = 2;
     public static int MAX_FAILED_RAIDAS_TO_SEND = 2;
     
