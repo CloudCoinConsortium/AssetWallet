@@ -1262,7 +1262,7 @@ public class AppCore {
     public static Map<String, Properties> parseINI(Reader reader) throws IOException {
         Map<String, Properties> result = new HashMap();
         new Properties() {
-            private Properties section;
+            private Properties section = new Properties();
 
             @Override
             public Object put(Object key, Object value) {

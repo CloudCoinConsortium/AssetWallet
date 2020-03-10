@@ -13,7 +13,11 @@ import assetwallet.core.Config;
 import assetwallet.core.GLogger;
 import assetwallet.core.RAIDA;
 import assetwallet.core.Servant;
+import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Properties;
 
 public class ShowCoins extends Servant {
     String ltag = "ShowCoins";
@@ -167,6 +171,9 @@ public class ShowCoins extends Servant {
         if (!queryMirror(asset, idx, collect, 1))
             return;
         
+        if (!queryMirror(asset, idx, collect, 2))
+            return;
+        
         for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {
             if (collect[i] == null) {
                 logger.error(ltag, "Failed to get all chunks from RAIDA servers. Chunk " + i + " is missing");
@@ -175,6 +182,30 @@ public class ShowCoins extends Servant {
             }
         }
         
+        sb = new StringBuilder();
+        for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++)
+            sb.append(collect[i]);
+        
+        String metadata = sb.toString().replace("-", "");
+        System.out.println(metadata);
+        byte[] bytes = Base64.getDecoder().decode(metadata);
+        metadata = new String(bytes);
+        System.out.println(metadata);
+        Map<String, Properties> data;
+        try {
+            data = AppCore.parseINI(new StringReader(metadata));
+        } catch (IOException e) {
+            System.out.println("failed");
+            return;
+        }
+
+        System.out.println(data);
+        Properties font = data.get("font_size");
+        
+        System.out.println("f=");
+        
+        
+        System.out.println("c="+metadata);
         
         globalResult.statuses[idx].status = ShowCoinsResult.STATUS_FINISHED;
         
@@ -309,12 +340,8 @@ public class ShowCoins extends Servant {
             System.out.println("setting md="+i+" m="+scr.metadata);
             collect[i] = scr.metadata;
         }
-        
-        
-        
-        
-        return true;
-        
+
+        return true;        
     }
     
     
