@@ -9,6 +9,7 @@ import assetwallet.core.Asset;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Properties;
 
 /**
  *
@@ -23,6 +24,7 @@ public class ProgramState {
     final public static int SCREEN_DEPOSIT = 6;
     final public static int SCREEN_DEPOSITING = 7;
     final public static int SCREEN_DEPOSIT_DONE = 8;
+    final public static int SCREEN_SHOW_ASSET = 9;
 
     final static int CB_STATE_INIT = 1;
     final static int CB_STATE_RUNNING = 2;
@@ -34,7 +36,9 @@ public class ProgramState {
     
     public int currentScreen;
     
-    
+
+    Asset curAsset;
+    Asset[] assets;
     
     String errText;
 

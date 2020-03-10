@@ -37,6 +37,8 @@ import assetwallet.core.ServantManager;
 import assetwallet.core.ShowCoins.ShowCoinsResult;
 import assetwallet.core.Unpacker.UnpackerResult;
 import assetwallet.core.Wallet;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 
 
@@ -363,9 +365,7 @@ public class AssetWallet  {
                 public void mouseReleased(MouseEvent evt) {
                     JMenuItem jMenuItem = (JMenuItem) evt.getSource();
                     popupMenu.setVisible(false);
-                    
-                    resetState();
-                    
+
                     String action = jMenuItem.getActionCommand();
                     if (action.equals("0")) {
                         ps.currentScreen = ProgramState.SCREEN_ECHO_RAIDA;               
@@ -518,7 +518,6 @@ public class AssetWallet  {
                 showAgreementScreen();
                 break;
             case ProgramState.SCREEN_SHOW_ASSETS:
-                resetState();
                 showAssetsScreen();
                 break;
             case ProgramState.SCREEN_SUPPORT:
@@ -538,6 +537,9 @@ public class AssetWallet  {
                 break;
             case ProgramState.SCREEN_DEPOSIT_DONE:
                 showDepositDoneScreen();
+                break;
+            case ProgramState.SCREEN_SHOW_ASSET:
+                showAssetScreen();
                 break;
   
         }
@@ -632,16 +634,7 @@ public class AssetWallet  {
         GridBagLayout gridbag = new GridBagLayout();
         GridBagConstraints c = new GridBagConstraints();      
         ct.setLayout(gridbag);
-        /*
-        x = new JLabel("");
-        AppUI.setFont(x, 15);
-        c.anchor = GridBagConstraints.CENTER;
-        c.insets = new Insets(0, 0, 4, 0); 
-        c.gridx = 0;
-        c.gridy = 0;
-        c.gridwidth = 2;
-        gridbag.setConstraints(x, c);
-        ct.add(x);*/
+
         
         int[] statuses = sm.getRAIDAStatuses();
         
@@ -741,23 +734,132 @@ public class AssetWallet  {
 
         
     }
+    
+    public void showAssetScreen() {
+        boolean isError = !ps.errText.equals("");
+
+        JPanel rightPanel = getRightPanel();    
+    
+        JPanel ct = new JPanel();
+        AppUI.setBoxLayout(ct, true);
+        AppUI.noOpaque(ct);
+        rightPanel.add(ct);
+        
+        Properties meta = ps.curAsset.getMeta();
+        byte[] data = ps.curAsset.getData();
+        
+        String title = AppCore.getMetaItem(meta, "title");
+        
+        JLabel ltitle = AppUI.getTitle(title);   
+        ct.add(ltitle);
+        AppUI.alignTop(ct);
+        AppUI.alignTop(ltitle);
+        
+        AppUI.hr(ct, 2);
+        maybeShowError(ct);
+        
+        // Outer Container
+        JPanel oct = new JPanel();
+        AppUI.noOpaque(oct);
+        
+        int y = 0;
+        
+        GridBagLayout gridbag = new GridBagLayout();
+        GridBagConstraints c = new GridBagConstraints(); 
+        c.gridwidth = 1;
+        c.anchor = GridBagConstraints.NORTHEAST;
+        c.insets = new Insets(12, 0, 0, 0); 
+        c.gridx = GridBagConstraints.RELATIVE;
+        c.gridy = 0;
+        c.weightx = 1;
+        oct.setLayout(gridbag);
+        
+        JPanel jp = new JPanel();
+        AppUI.setCommonFont(jp);
+        AppUI.noOpaque(jp);
+        Image i = AppCore.getScaledImage(700, 560, data);
+        ImageIcon ii = new ImageIcon(i);
+        jp.add(new JLabel(ii));
+        gridbag.setConstraints(jp, c);
+        oct.add(jp);
+        
+        jp = new JPanel();
+        AppUI.setBoxLayout(jp, true);
+        AppUI.setCommonFont(jp);
+        AppUI.alignTop(jp);
+        AppUI.noOpaque(jp);
+        AppUI.setSize(jp, 320, 460);
+        
+        
+        /*
+        String[] keys = {
+            "id", "file_extension", "filename_tag", "series_name", "set", "title",
+            "publisher", "description", "short_description", "genre", "category", "subject", "date_of_creation",
+            "font_family", "font_size", "font_color", "text_location_x", "text_location_y", "translate_sn", "total"
+        };*/
+
+        
+        AppUI.setMetaItem(meta, jp, "id", "ID #");
+        AppUI.setMetaItem(meta, jp, "publisher", "Publisher");
+        AppUI.setMetaItem(meta, jp, "series_name", "Series");
+        AppUI.setMetaItem(meta, jp, "date_of_creation", "Date");
+        AppUI.setMetaItem(meta, jp, "genre", "Genre");
+        AppUI.setMetaItem(meta, jp, "subject", "Subject");
+        AppUI.setMetaItem(meta, jp, "category", "Category");
+        AppUI.setMetaItem(meta, jp, "description", "<br>");
+        
+        
+        
+        c.gridwidth = 1;
+        c.anchor = GridBagConstraints.NORTHWEST;
+        c.insets = new Insets(12, 38, 0, 0); 
+        c.gridx = GridBagConstraints.RELATIVE;
+        c.gridy = 0;
+        c.weightx = 2;
+        gridbag.setConstraints(jp, c);
+        oct.add(jp);
+
+        
+        AppUI.hr(rightPanel, 5);
+        rightPanel.add(oct); 
+    }
+    
+    public void setAssetBlock(Asset asset, Properties meta, byte[] data) {
+        JComponent[] jks = (JComponent[]) asset.getPrivate();
+        JLabel jl = (JLabel) jks[1];
+        JProgressBar pbar = (JProgressBar) jks[2];
+        JLabel jdate = (JLabel) jks[3];
+        JLabel jimg = (JLabel) jks[0];
+    
+        AppUI.setHandCursor(jl.getParent());
+        jl.getParent().addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                ps.curAsset = asset;
+                ps.currentScreen = ProgramState.SCREEN_SHOW_ASSET;
+                showScreen();
+                return;
+            }   
+        });
+        
+        Image i = AppCore.getScaledImage(100, 80, data);
+        ImageIcon ii = new ImageIcon(i);
+       
+        jimg.setIcon(ii);
+        String title = AppCore.getMetaItem(meta, "title");
+        String date = AppCore.getMetaItem(meta, "date_of_creation");
+        jl.setText("<html><div style='text-align:center'>" + title + "</div></html>");
+        jdate.setText(date);
+        pbar.setVisible(false);
+    }
    
     public void showAssetsScreen() {      
-        
-        trTitle = AppUI.getTitle("");   
-        trInventory = new JLabel("");
-        //Wallet w = sm.getActiveWallet(); 
-        //updateTransactionWalletData(w);
-        
         JPanel rightPanel = getRightPanel(AppUI.getColor4());    
         JPanel ct = new JPanel();
         AppUI.setBoxLayout(ct, true);
         
         AppUI.noOpaque(ct);
-        rightPanel.add(ct);
-        
-        ct.add(trTitle);
-        AppUI.hr(ct, 10);        
+        rightPanel.add(ct);       
         JLabel trLabel;   
         
         boolean isError = !ps.errText.equals("");        
@@ -766,16 +868,22 @@ public class AssetWallet  {
             resetState();
             return;
         }
-        
-
-        //AppUI.hr(ct, 20);
-       
+    
         int y = 0;
         JPanel xpanel = new JPanel();
         GridBagLayout gridbag = new GridBagLayout();
         xpanel.setLayout(gridbag);
 
-        Asset[] assets = AppCore.getCoinsInDirs(Config.DIR_BANK, Config.DIR_FRACKED, Config.DEFAULT_NAME);
+        Asset[] assets;
+        boolean isCached = false;
+        if (ps.assets == null) {      
+            assets = AppCore.getCoinsInDirs(Config.DIR_BANK, Config.DIR_FRACKED, Config.DEFAULT_NAME);
+            ps.assets = assets;
+        } else {
+            assets = ps.assets;
+            isCached = true;
+        }
+        
         if (assets == null || assets.length == 0) {
             trLabel = new JLabel("No Assets");
         } else {
@@ -786,33 +894,63 @@ public class AssetWallet  {
         AppUI.alignCenter(trLabel);
         ct.add(trLabel);
         
-        
         for (int i = 0; i < assets.length; i++) {
             JLabel icon;
         
             AssetUIItem uitem = new AssetUIItem();
             uitem.idx = i; 
             try {
-                Image img = ImageIO.read(getClass().getClassLoader().getResource("resources/CloudCoinLogo2.png"));
+                Image img = ImageIO.read(getClass().getClassLoader().getResource("resources/no-image.png"));
+                img = img.getScaledInstance(100, 80, Image.SCALE_SMOOTH);
                 icon = new JLabel(new ImageIcon(img));
-                uitem.image = icon;
-               
+                AppUI.setSize(icon, 200, 80);
+                uitem.image = icon;             
             } catch (Exception e) {                       
             }
-            uitem.title = new JLabel("Loading...");
-            uitem.date = new JLabel("x");
+    
+            if (isCached) {
+                JComponent[] jks = (JComponent[]) assets[i].getPrivate();
+                uitem.title = (JLabel) jks[1];
+                uitem.pbar = (JProgressBar) jks[2];
+                uitem.date = (JLabel) jks[3];
+                uitem.image = (JLabel) jks[0];
+            } else {
+                uitem.title = new JLabel("Loading...");
+                uitem.date = new JLabel("");
+                uitem.pbar = new JProgressBar();
+                uitem.pbar.setStringPainted(true);
+                AppUI.setMargin(uitem.pbar, 0);
+                AppUI.setSize(uitem.pbar, (int) 100 , 20);
+                uitem.pbar.setMinimum(0);
+                uitem.pbar.setMaximum(24);
+                uitem.pbar.setValue(0);
+                uitem.pbar.setUI(new FancyProgressBar());
+                AppUI.noOpaque(uitem.pbar);
+                
+                
+            }
             
             JComponent[] jks = new JComponent[] {
                 uitem.image,
                 uitem.title,
+                uitem.pbar,
                 uitem.date,
-                new JLabel("button")
+                //new JLabel("button")
             };
             
             assets[i].setPrivate(jks);
             
-            AppUI.getGBRow(xpanel, jks, y, gridbag);
-            y++;
+            
+            if (i % 4 == 0)
+                y++;
+            
+            AppUI.getGBBlock(xpanel, jks, y, gridbag);
+            if (isCached) {
+                Properties meta = assets[i].getMeta();
+                byte[] data = assets[i].getData();
+                if (meta != null)
+                    setAssetBlock(assets[i], meta, data);
+            }
         }
         
         AppUI.GBPad(xpanel, y, gridbag);
@@ -883,9 +1021,9 @@ public class AssetWallet  {
                 
                 sm.startShowCoinsService(assets, new CallbackInterface() {
                     public void callback(Object o) {
+
+                        
                         ShowCoinsResult scresult = (ShowCoinsResult) o;
-                        //w.setSNs(scresult.coins);
-                        System.out.println("sc="+scresult.status);
                         if (scresult.status == ShowCoinsResult.STATUS_ERROR) {
                             ps.errText = "Global error";
                             wl.error(ltag, "Global error");
@@ -898,54 +1036,49 @@ public class AssetWallet  {
                                 return;
                             }
                             
-                            System.out.println(scresult.getOperation(idx) + " " 
-                                    + scresult.getProgress(idx) + "/" + scresult.getProgressTotal(idx) + " st="+ scresult.getStatus(idx));
+                            //System.out.println(scresult.getOperation(idx) + " " 
+                              //      + scresult.getProgress(idx) + "/" + scresult.getProgressTotal(idx) + " st="+ scresult.getStatus(idx));
+
+                            if (ps.currentScreen == ProgramState.SCREEN_SHOW_ASSETS) {
+                                JComponent[] jks = (JComponent[]) fassets[idx].getPrivate();
+                                JLabel jl = (JLabel) jks[1];
+                                JProgressBar pbar = (JProgressBar) jks[2];
+                                JLabel jdate = (JLabel) jks[3];
                             
-                            
-                            
-                            JComponent[] jks = (JComponent[]) fassets[idx].getPrivate();
-                            JLabel jl = (JLabel) jks[1];
-                            
-                            if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_ERROR) {
-                                jl.setText("Error");
-                                return;
-                            } else if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_FINISHED) {
-                                jl.setText("Finished");
-                                return;
+                                pbar.setValue(scresult.getProgress(idx));
+                                pbar.setMaximum(scresult.getProgressTotal(idx));
+                                if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_ERROR) {
+                                    jl.setText("Error");
+                                    pbar.setVisible(false);
+                                    return;
+                                } else if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_FINISHED) {
+                                    Properties meta = scresult.getMeta(idx);
+                                    byte[] img = scresult.getData(idx);
+                                    
+                                    setAssetBlock(fassets[idx], meta, img);
+                                            
+                                } else if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_PROCESSING) {
+                                    int progress = (int) (((double) scresult.getProgress(idx) 
+                                            / (double) scresult.getProgressTotal(idx)) * 100);
+                                    jl.setText(scresult.getOperation(idx) + " " + progress + "%");
+                                }
                             }
                             
-                            jl.setText(scresult.getOperation(idx) + " " + scresult.getProgress(idx) + "/" + scresult.getProgressTotal(idx));
-                           
-                            //JComponent[] jks = fassets
-                             //System.out.println("xxxxxxxxxxxxxx="+scresult.currIdx);
-                            //fjks[0].setText(scresult.getProgress(0) + "");
+                            if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_FINISHED)
+                                fassets[idx].setData(scresult.getData(idx), scresult.getMeta(idx));
+
                             return;
                         } else if (scresult.status == ShowCoinsResult.STATUS_CANCELLED) {
                             wl.debug(ltag, "Cancelled");
                             return;
                         } 
-                        
-                        // Finished
-                        /*
-                        int idx = scresult.currIdx;
-                        if (idx >= fassets.length) {
-                            wl.error(ltag, "Wrong idx " + idx + " length = " + fassets.length);
-                            return;
-                        }
-                        
-                        int status = 
-                            
-                        JComponent[] jks = (JComponent[]) fassets[idx].getPrivate();
-                        JLabel jl = (JLabel) jks[1];
-                        jl.setText
-                        
-                        */
                     }
                 });
             }
         });
         
-        t.start();
+        if (!isCached)
+            t.start();
 
         
         AppUI.hr(rightPanel, 5);

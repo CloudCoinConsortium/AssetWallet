@@ -8,6 +8,7 @@ package assetwallet.core;
 import java.awt.Image;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
+import javax.swing.JProgressBar;
 
 /**
  *
@@ -17,6 +18,7 @@ public class AssetUIItem {
     public JLabel image;
     public JLabel title;
     public JLabel date;
+    public JProgressBar pbar;
     public int idx;
     
 }

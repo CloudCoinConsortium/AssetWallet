@@ -30,6 +30,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
+import java.util.Properties;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -642,6 +643,40 @@ public class AppUI {
         }
     }
 
+    public static void getGBBlock(JComponent parent, JComponent[] items, int y, GridBagLayout gridbag) {
+        GridBagConstraints c = new GridBagConstraints();
+  
+        c.anchor = GridBagConstraints.NORTH;
+        c.insets = new Insets(12, 10, 10, 10);    
+        c.gridy = y;
+        c.weightx = 1;
+        c.weighty = 0;
+        c.gridx = GridBagConstraints.RELATIVE;
+        
+        JPanel jp = new JPanel();
+        AppUI.setBoxLayout(jp, true);
+
+        for (int i = 0; i < items.length; i++) {
+            if (i == 0)
+                AppUI.setMargin(items[i], 2, 0, 0, 0);
+            else
+                AppUI.setMargin(items[i], 8, 0, 0, 0);
+            AppUI.alignCenter(items[i]);
+            AppUI.setFont(items[i], 14);
+            jp.add(items[i]);
+        }
+
+        AppUI.setSize(jp, 200, 180);
+        AppUI.setMargin(jp, 10);
+        AppUI.alignCenter(jp);
+        AppUI.noOpaque(jp);
+        //AppUI.setBackground(jp, AppUI.getColor5());
+        
+        gridbag.setConstraints(jp, c);
+        parent.add(jp);
+     
+    }
+    
     public static void getGBRow(JComponent parent, JComponent[] items, int y, GridBagLayout gridbag) {
         GridBagConstraints c = new GridBagConstraints();
   
@@ -655,8 +690,6 @@ public class AppUI {
         c.gridwidth = 1;
         if (items.length == 1)
             c.gridwidth = 4;
-             
-        System.out.println("w="+c.gridwidth);
                 
         for (int i = 0; i < items.length; i++) {
             if (items[i] instanceof JLabel)
@@ -679,5 +712,16 @@ public class AppUI {
         c.weighty = 1;
         gridbag.setConstraints(padder, c);
         parent.add(padder);
+    }
+    
+    public static void setMetaItem(Properties meta, JPanel jp, String key, String value) {
+        String propname = AppCore.getMetaItem(meta, key);
+        if (propname != null) {
+            JLabel jl = new JLabel();
+            AppUI.setFont(jl, 16);
+            jl.setText("<html><b>" + value + "</b> " + propname + "</html>");
+            AppUI.setMargin(jl, 10, 0, 0, 0);
+            jp.add(jl);
+        }
     }
 }

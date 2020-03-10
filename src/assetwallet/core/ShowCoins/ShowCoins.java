@@ -49,7 +49,6 @@ public class ShowCoins extends Servant {
                 logger.info(ltag, "RUN ShowCoins");
                 doShowCoins(fassets, cb);
 
-                System.out.println("s="+globalResult.status);
                 if (globalResult.status != ShowCoinsResult.STATUS_ERROR)
                     globalResult.status = ShowCoinsResult.STATUS_FINISHED;
                 if (cb != null)
@@ -70,12 +69,12 @@ public class ShowCoins extends Servant {
             aResult.statuses[i].progress = globalResult.statuses[i].progress;
             aResult.statuses[i].progressTotal = globalResult.statuses[i].progressTotal;
             aResult.statuses[i].operation = globalResult.statuses[i].operation;
+            aResult.statuses[i].meta = globalResult.statuses[i].meta;
+            aResult.statuses[i].data = globalResult.statuses[i].data;
         }
     }
 
-    public void doShowCoins(Asset[] assets, CallbackInterface cb) {
-        
-        
+    public void doShowCoins(Asset[] assets, CallbackInterface cb) {  
         for (int i = 0; i < assets.length; i++) {
             globalResult.currIdx = i;
             showAsset(assets[i], i, cb);
@@ -121,7 +120,6 @@ public class ShowCoins extends Servant {
 
             
             public void callback(Object result) {
-                System.out.println("xxx="+ idx + " c=" + asset.sn + " p=" + globalResult.statuses[idx].progress+"");
                 globalResult.statuses[idx].progress++;
                 if (myCb != null) {
                     ShowCoinsResult sr = new ShowCoinsResult();
@@ -144,8 +142,8 @@ public class ShowCoins extends Servant {
         }
         
         String[] collect = new String[RAIDA.TOTAL_RAIDA_COUNT];
+        String[] bdata = new String[RAIDA.TOTAL_RAIDA_COUNT];
         for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {
-            System.out.println("r="+i+" res="+results[i]);
             if (results[i] != null) {
                 if (results[i].equals("")) {
                     logger.error(ltag, "Skipped raida" + i);
@@ -165,16 +163,17 @@ public class ShowCoins extends Servant {
             }
             
             collect[i] = scr.metadata;
+            bdata[i] = scr.base64data;
         }
         
         // Doing Mirrors if necessary
-        if (!queryMirror(asset, idx, collect, 1))
+        if (!queryMirror(asset, idx, collect, bdata, 1))
             return;
         
-        if (!queryMirror(asset, idx, collect, 2))
+        if (!queryMirror(asset, idx, collect, bdata, 2))
             return;
         
-        for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {
+        for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {         
             if (collect[i] == null) {
                 logger.error(ltag, "Failed to get all chunks from RAIDA servers. Chunk " + i + " is missing");
                 globalResult.statuses[idx].status = ShowCoinsResult.STATUS_ERROR;
@@ -183,38 +182,42 @@ public class ShowCoins extends Servant {
         }
         
         sb = new StringBuilder();
-        for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++)
+        StringBuilder sbdata = new StringBuilder();
+        for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {
             sb.append(collect[i]);
+            sbdata.append(bdata[i]);
+        }
         
         String metadata = sb.toString().replace("-", "");
-        System.out.println(metadata);
+        String sbdataString = sbdata.toString().replace("-", "");
+        
         byte[] bytes = Base64.getDecoder().decode(metadata);
+        byte[] sbdataBytes = Base64.getDecoder().decode(sbdataString);
+        
         metadata = new String(bytes);
-        System.out.println(metadata);
+        metadata = "[meta]\n" + metadata;
         Map<String, Properties> data;
         try {
             data = AppCore.parseINI(new StringReader(metadata));
         } catch (IOException e) {
-            System.out.println("failed");
+            globalResult.statuses[idx].status = ShowCoinsResult.STATUS_ERROR;
             return;
         }
 
-        System.out.println(data);
-        Properties font = data.get("font_size");
-        
-        System.out.println("f=");
-        
-        
-        System.out.println("c="+metadata);
+        Properties meta = data.get("meta");
+        if (meta == null) {
+            logger.error(ltag, "Failed to parse properties: " + metadata);
+            globalResult.statuses[idx].status = ShowCoinsResult.STATUS_ERROR;
+            return;
+        }
         
         globalResult.statuses[idx].status = ShowCoinsResult.STATUS_FINISHED;
-        
-        
-  
-  //      System.out.println("s1=" + assembleMessage(collect));
+        globalResult.statuses[idx].meta = meta;
+        globalResult.statuses[idx].data = sbdataBytes;
+
     }
 
-    public boolean queryMirror(Asset asset, int idx, String[] collect, int mirrorNum) {
+    public boolean queryMirror(Asset asset, int idx, String[] collect, String[] bdata, int mirrorNum) {
         StringBuilder sb;      
         String mirror;
         
@@ -234,7 +237,7 @@ public class ShowCoins extends Servant {
                 
             c++;
         }
-        System.out.println("DOING MIRROR " + mirror + " c=" + c);
+
         if (c == 0) {
             logger.debug(ltag, "No need to query mirror " + mirror);
             return true;
@@ -251,17 +254,20 @@ public class ShowCoins extends Servant {
         }
         
         int[] raidas = new int[c];
+        int[] targetRaidas = new int[c];
         String[] mrequests = new String[c];
         c = 0;
         for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {
             if (collect[i] != null)
                 continue;
             
+            
             if (mirrorNum == 1)
                 raidas[c] = AppCore.getRaidaMirror(i);
             else 
                 raidas[c] =  AppCore.getRaidaMirror2(i);
             
+            targetRaidas[c] = i;
             if (raidas[c] < 0) {
                 logger.error(ltag, "Invalid mirror raida: " + raidas[c]);
                 globalResult.statuses[idx].status = ShowCoinsResult.STATUS_ERROR;
@@ -280,22 +286,16 @@ public class ShowCoins extends Servant {
             sb.append("&denomination=1");
             sb.append("&data=");
             sb.append(mirror);
-
-            
-            
+        
             mrequests[c] = sb.toString();
-            System.out.println("r="+mrequests[c]);
             c++;
         }
-        
 
-        
         String[] results = raida.query(mrequests, null, new CallbackInterface() {
             final GLogger gl = logger;
             final CallbackInterface myCb = cb;
      
             public void callback(Object result) {
-                System.out.println("xxx2="+ idx + " c=" + asset.sn + " p=" + globalResult.statuses[idx].progress+"");
                 globalResult.statuses[idx].progress++;
                 if (myCb != null) {
                     ShowCoinsResult sr = new ShowCoinsResult();
@@ -318,107 +318,30 @@ public class ShowCoins extends Servant {
         }
 
         for (int i = 0; i < results.length; i++) {
-            System.out.println("r22="+i+" res="+results[i]);
             if (results[i] != null) {
                 if (results[i].equals("")) {
-                    logger.error(ltag, "Skipped raida" + i);
+                    logger.error(ltag, "Skipped raida" + targetRaidas[i]);
                     continue;
                 }
             }
 
             ShowCoinsResponse scr = (ShowCoinsResponse) parseResponse(results[i], ShowCoinsResponse.class);
             if (scr == null) {
-                logger.error(ltag, "Mirror. Failed to get response coin. RAIDA: " + i);
+                logger.error(ltag, "Mirror. Failed to get response coin. RAIDA: " + targetRaidas[i]);
                 continue;
             }
 
             if (!scr.status.equals(Config.REQUEST_STATUS_PASS)) {
-                logger.error(ltag, "Mirror. Failed to show coins. RAIDA: " + i + " Result: " + scr.message);       
+                logger.error(ltag, "Mirror. Failed to show coins. RAIDA: " + targetRaidas[i] + " Result: " + scr.message);       
                 continue;
             }
             
-            System.out.println("setting md="+i+" m="+scr.metadata);
-            collect[i] = scr.metadata;
+            collect[targetRaidas[i]] = scr.metadata;
+            bdata[targetRaidas[i]] = scr.base64data;
         }
 
         return true;        
     }
     
     
-
-    public String assembleMessage(String[] mparts) {
-        int cs, length;
-    
-        cs = 0;
-        
-        // Determine the chunk size
-        for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {
-            if (mparts[i] == null)
-                continue;
-
-            System.out.println("length="+mparts[i].length() + " val="+mparts[i]+ " i="+i);
-            cs = mparts[i].length() / 3;
-            break;
-        }
-
-        // Failed to determine the chunk size
-        if (cs == 0)
-            return null;
-
-        // The length of the message
-        length = cs * RAIDA.TOTAL_RAIDA_COUNT;
-        
-        char[] msg = new char[length];
-        //msg = [length]
-
-        System.out.println("l="+length + " cs="+cs);
-        for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {
-            System.out.println("m="+i+" v="+mparts[i]);
-            if (mparts[i] == null)
-                continue;
-
-            // Split the data from one RAIDA server
-            char[] chrs = mparts[i].toCharArray();
-
-            System.out.println("cl="+chrs.length);
-            // Go over this data
-            for (int j = 0; j < chrs.length; j += 3) {
-                int triplet = j / 3;
-
-                int cidx0 = triplet * 25 + i;
-                int cidx1 = triplet * 25 + i + 3;
-                int cidx2 = triplet * 25 + i + 6;
-
-                if (cidx0 >= length)
-                    cidx0 -= length;
-
-                if (cidx1 >= length)
-                    cidx1 -= length;
-
-                if (cidx2 >= length)
-                    cidx2 -= length;
-                                        
-                msg[cidx0] = chrs[j];
-                msg[cidx1] = chrs[j + 1];
-                msg[cidx2] = chrs[j + 2];
-            }
-        }
-        
-        // Check if the message is full
-        for (int i = 0; i < length; i++) {
-            if (msg[i] == '\0') {
-                logger.error(ltag, "Message is not full. idx " + i);
-                return null;
-            }
-        }
-        
-        String result = msg.toString().replace("-", "");
-        
-        System.out.println("r="+result);
-
-
-        return result;
-    }
-
-
 }

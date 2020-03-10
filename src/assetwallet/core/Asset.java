@@ -6,6 +6,7 @@ import org.json.JSONObject;
 
 import java.util.Date;
 import java.util.Calendar;
+import java.util.Properties;
 
 public class Asset {
         Object privateData;
@@ -21,6 +22,9 @@ public class Asset {
 	private String pownString;
 	private String[] aoid;
 	private String fileName;
+        
+        private Properties meta;
+        private byte[] data;
 
 	public static final int YEARSTILEXPIRE = 2;
 	public String tag;
@@ -114,6 +118,19 @@ public class Asset {
 			detectStatus[i] = STATUS_UNTRIED;
 	}
 
+        public Properties getMeta() {
+            return this.meta;
+        }
+        
+        public byte[] getData() {
+            return this.data;
+        }
+        
+        public void setData(byte[] data, Properties meta) {
+            this.data = data;
+            this.meta = meta;
+        }
+        
 	public void setDetectStatus(int idx, int status) {
 		detectStatus[idx] = status;
 	}

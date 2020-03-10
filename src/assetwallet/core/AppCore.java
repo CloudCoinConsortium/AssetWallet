@@ -1,8 +1,11 @@
 package assetwallet.core;
 
 
+import java.awt.Image;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -43,6 +46,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
+import javax.imageio.ImageIO;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -1241,7 +1245,6 @@ public class AppCore {
                 if (!AppCore.hasCoinExtension(file))
                     continue;
                
-                System.out.println("f="+file.getAbsolutePath());
                 Asset cc;
                 try {
                     cc = new Asset(file.getAbsolutePath());
@@ -1262,7 +1265,7 @@ public class AppCore {
     public static Map<String, Properties> parseINI(Reader reader) throws IOException {
         Map<String, Properties> result = new HashMap();
         new Properties() {
-            private Properties section = new Properties();
+            private Properties section;
 
             @Override
             public Object put(Object key, Object value) {
@@ -1335,28 +1338,66 @@ public class AppCore {
     }
 
     public static int getRaidaMirror(int raidaIdx) {
-        System.out.println("idx="+raidaIdx+" tc="+RAIDA.TOTAL_RAIDA_CNT);
         if (raidaIdx >= RAIDA.TOTAL_RAIDA_COUNT)
             return -1;
         
-        if (raidaIdx < RAIDA.TOTAL_RAIDA_COUNT - 1)
-            return raidaIdx + 1;
-        
-        return 0;
+        if (raidaIdx == 0)
+            return RAIDA.TOTAL_RAIDA_COUNT - 1;
+               
+        return raidaIdx - 1;
     }
     
     public static int getRaidaMirror2(int raidaIdx) {
         if (raidaIdx >= RAIDA.TOTAL_RAIDA_COUNT)
             return -1;
 
-        if (raidaIdx < RAIDA.TOTAL_RAIDA_COUNT - 2)
-            return raidaIdx + 2;
+        if (raidaIdx == 0)
+            return RAIDA.TOTAL_RAIDA_COUNT - 2;
         
-        if (raidaIdx < RAIDA.TOTAL_RAIDA_COUNT - 1)
-            return 1;
+        if (raidaIdx == 1)
+            return RAIDA.TOTAL_RAIDA_COUNT - 1;
         
-        return 0;
+        return raidaIdx - 2;
     }
     
+    public static String getMetaItem(Properties meta, String key) {
+        String value = meta.getProperty(key);
+        if (value == null)
+            return null;
+        
+        return value.replaceAll("<br>$","");
+    }
     
+    public static Image getScaledImage(int maxWidth, int maxHeight, byte[] data) {
+        BufferedImage bi;
+        Image i;
+        try {
+            bi = ImageIO.read(new ByteArrayInputStream(data));
+            i = (Image) bi;        
+            int w = bi.getWidth();
+            int h = bi.getHeight();
+            
+            
+            double ratio = (double) w / (double) h;
+            if (h > maxHeight) {
+                h = maxHeight;
+                w = (int) (h * ratio);
+                if (w > maxWidth) {
+                    w = maxWidth;
+                    h = (int) (w / ratio);
+                }
+                
+            } else if (w > maxWidth) {
+                w = maxWidth;
+                h = (int) (w / ratio);
+            }
+
+            i = i.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+        } catch (IOException e) {
+            logger.error(ltag, "Failed to load image");
+            return null;
+        }
+        
+        return i;
+    }
 }

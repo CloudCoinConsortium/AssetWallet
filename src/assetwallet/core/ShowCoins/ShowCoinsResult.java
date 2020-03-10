@@ -2,6 +2,7 @@ package assetwallet.core.ShowCoins;
 
 import assetwallet.core.Asset;
 import assetwallet.core.RAIDA;
+import java.util.Properties;
 
 
 public class ShowCoinsResult {
@@ -23,6 +24,8 @@ public class ShowCoinsResult {
         status = STATUS_PROCESSING;
     }
     
+
+    
     public int currIdx;
    
     public int getProgress(int idx) {
@@ -40,6 +43,14 @@ public class ShowCoinsResult {
     public int getStatus(int idx) {
         return this.statuses[idx].status;
     }
+    
+    public Properties getMeta(int idx) {
+        return this.statuses[idx].meta;
+    }
+    
+    public byte[] getData(int idx) {
+        return this.statuses[idx].data;
+    }
 }
 
 
@@ -47,6 +58,8 @@ public class ShowCoinsResult {
     public int status;
     public int progress, progressTotal;
     public String operation;
+    Properties meta;
+    byte[] data;
     
     ShowCoinsAssetResult() {
         this.status = ShowCoinsResult.STATUS_PROCESSING;
