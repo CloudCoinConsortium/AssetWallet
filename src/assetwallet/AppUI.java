@@ -721,6 +721,7 @@ public class AppUI {
             AppUI.setFont(jl, 16);
             jl.setText("<html><b>" + value + "</b> " + propname + "</html>");
             AppUI.setMargin(jl, 10, 0, 0, 0);
+            AppUI.alignCenter(jl);
             jp.add(jl);
         }
     }

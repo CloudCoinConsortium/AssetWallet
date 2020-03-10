@@ -26,6 +26,7 @@ import assetwallet.core.AppCore;
 import assetwallet.core.CallbackInterface;
 import assetwallet.core.Asset;
 import assetwallet.core.Config;
+import assetwallet.core.Exporter.Exporter;
 
 import assetwallet.core.GLogger;
 import assetwallet.core.RAIDA;
@@ -108,10 +109,9 @@ public class ServantManager {
                 "Unpacker",
                 "Grader",
                 "FrackFixer",
-             //   "Exporter",           
+                "Exporter",           
                 "LossFixer",
         }, AppCore.getRootPath() + File.separator + user, logger);
-   
 
         initWallets();
 
@@ -183,6 +183,15 @@ public class ServantManager {
         initWallet(wallet, password);
               
         return true;
+    }
+    
+    public void startExporterService(Asset asset, CallbackInterface cb) {
+        if (sr.isRunning("Exporter")) {
+            return;
+        }
+        
+	Exporter e = (Exporter) sr.getServant("Exporter");
+	e.launch(Config.TYPE_PNG, asset, Config.TAG_RANDOM, Config.DEFAULT_EXPORT_DIR, cb);
     }
 
     public void startEchoService(CallbackInterface cb) {

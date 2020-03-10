@@ -25,6 +25,7 @@ public class ProgramState {
     final public static int SCREEN_DEPOSITING = 7;
     final public static int SCREEN_DEPOSIT_DONE = 8;
     final public static int SCREEN_SHOW_ASSET = 9;
+    final public static int SCREEN_EXPORT_DONE = 10;
 
     final static int CB_STATE_INIT = 1;
     final static int CB_STATE_RUNNING = 2;
@@ -55,6 +56,7 @@ public class ProgramState {
     String chosenFile;
     String typedMemo;
 
+    String exportedFile;
     
     boolean isEchoFinished;
 

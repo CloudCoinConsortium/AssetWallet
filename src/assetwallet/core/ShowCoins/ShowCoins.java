@@ -193,9 +193,10 @@ public class ShowCoins extends Servant {
         
         byte[] bytes = Base64.getDecoder().decode(metadata);
         byte[] sbdataBytes = Base64.getDecoder().decode(sbdataString);
-        
+
         metadata = new String(bytes);
         metadata = "[meta]\n" + metadata;
+        System.out.println("m="+metadata);
         Map<String, Properties> data;
         try {
             data = AppCore.parseINI(new StringReader(metadata));
@@ -215,6 +216,7 @@ public class ShowCoins extends Servant {
         globalResult.statuses[idx].meta = meta;
         globalResult.statuses[idx].data = sbdataBytes;
 
+        
     }
 
     public boolean queryMirror(Asset asset, int idx, String[] collect, String[] bdata, int mirrorNum) {

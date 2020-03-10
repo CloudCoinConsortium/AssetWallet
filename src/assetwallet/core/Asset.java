@@ -142,7 +142,7 @@ public class Asset {
 	public String getFileName() {
 		String result;
 
-		result = getDenomination() + ".CloudCoin." + this.nn + "." + this.sn + ".";
+		result = getDenomination() + ".Celebrium." + this.nn + "." + this.sn + ".";
 		if (this.tag != null && !this.tag.isEmpty()) {
 			result += this.tag + ".";
 		}
@@ -215,7 +215,7 @@ public class Asset {
                 setMissingANs();
                 setEd();
 
-		json = "{\"cloudcoin\":[{\"nn\":\"" + nn + "\",\"sn\":\"" + sn + "\",\"an\":[\"";
+		json = "{\"celebrium\":[{\"nn\":\"" + nn + "\",\"sn\":\"" + sn + "\",\"an\":[\"";
 		for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++) {
                     String an = ans[i];
 

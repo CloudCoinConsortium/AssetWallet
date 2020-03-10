@@ -29,6 +29,7 @@ import assetwallet.core.AssetUIItem;
 import assetwallet.core.Authenticator.AuthenticatorResult;
 import assetwallet.core.CallbackInterface;
 import assetwallet.core.Config;
+import assetwallet.core.Exporter.ExporterResult;
 import assetwallet.core.FrackFixer.FrackFixerResult;
 import assetwallet.core.Grader.GraderResult;
 import assetwallet.core.LossFixer.LossFixerResult;
@@ -541,6 +542,9 @@ public class AssetWallet  {
             case ProgramState.SCREEN_SHOW_ASSET:
                 showAssetScreen();
                 break;
+            case ProgramState.SCREEN_EXPORT_DONE:
+                showExportDoneScreen();
+                break;
   
         }
         
@@ -581,7 +585,7 @@ public class AssetWallet  {
         String tc = AppCore.formatNumber(totalCoins);
         
         pbarText.setText("<html><div style='text-align:center'>Round #" + round + " Fixing on RAIDA " + 
-                fixingRAIDA + "<br>" + stc + " / " + tc + " CloudCoins Fixed</div></html>");
+                fixingRAIDA + "<br>" + stc + " / " + tc + " Assets Fixed</div></html>");
         
         pbarText.repaint();
     }
@@ -596,7 +600,7 @@ public class AssetWallet  {
         String stc = AppCore.formatNumber(totalCoinsProcessed);
         String tc = AppCore.formatNumber(totalCoins);
         
-        pbarText.setText("Deposited " + stc + " / " + tc + " CloudCoins");
+        pbarText.setText("Deposited " + stc + " / " + tc + " Assets");
         pbarText.repaint();
         
     }
@@ -735,6 +739,55 @@ public class AssetWallet  {
         
     }
     
+    public void showExportDoneScreen() {
+        JPanel rightPanel = getRightPanel();    
+    
+        JPanel ct = new JPanel();
+        AppUI.setBoxLayout(ct, true);
+        AppUI.noOpaque(ct);
+        rightPanel.add(ct);
+ 
+        JLabel ltitle = AppUI.getTitle("Export Done");   
+        ct.add(ltitle);
+        AppUI.alignTop(ct);
+        AppUI.alignTop(ltitle);
+        
+        AppUI.hr(ct, 2);
+        maybeShowError(ct);
+        
+        // Outer Container
+        JPanel oct = new JPanel();
+        AppUI.noOpaque(oct);
+        
+        JLabel txt = new JLabel("<html><div style='width: 720px'>" + ps.exportedFile + "</div></html>");
+        AppUI.setFont(txt, 16);
+        oct.add(txt);
+        
+        
+        if (Desktop.isDesktopSupported()) {
+            try {
+                Desktop.getDesktop().open(new File(ps.exportedFile));
+            } catch (IOException e) {
+                wl.error(ltag, "Failed to open browser: " + e.getMessage());
+            }
+        }
+        
+        JPanel bp = getOneButtonPanelCustom("Continue", new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ps.currentScreen = ProgramState.SCREEN_SHOW_ASSETS;
+                showScreen();
+            }
+        });
+        
+        resetState();
+        
+
+        AppUI.hr(rightPanel, 5);
+        rightPanel.add(oct); 
+        
+        rightPanel.add(bp);
+    }
+    
     public void showAssetScreen() {
         boolean isError = !ps.errText.equals("");
 
@@ -788,7 +841,7 @@ public class AssetWallet  {
         AppUI.setCommonFont(jp);
         AppUI.alignTop(jp);
         AppUI.noOpaque(jp);
-        AppUI.setSize(jp, 320, 460);
+        AppUI.setSize(jp, 320, 470);
         
         
         /*
@@ -809,6 +862,44 @@ public class AssetWallet  {
         AppUI.setMetaItem(meta, jp, "description", "<br>");
         
         
+        JPanel bp = getOneButtonPanelCustom("Export", new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                sm.startExporterService(ps.curAsset, new CallbackInterface() {
+                    public void callback(Object o) {   
+                        ExporterResult eresult = (ExporterResult) o;
+                        if (eresult.status == ExporterResult.STATUS_ERROR) {
+                            EventQueue.invokeLater(new Runnable() {
+                                public void run(){
+                                    if (!eresult.errText.isEmpty())
+                                        ps.errText = eresult.errText;
+                                    else
+                                        ps.errText = "Failed to export asset";
+                                    showScreen();
+                                    return;
+                                }
+                            });
+                            return;
+                        }
+                            
+                        if (eresult.status == ExporterResult.STATUS_FINISHED) {
+                            EventQueue.invokeLater(new Runnable() {
+                                public void run(){
+                                    ps.exportedFile = eresult.exportedFileNames.get(0);
+                                    ps.currentScreen = ProgramState.SCREEN_EXPORT_DONE;
+                                    showScreen();
+                                }
+                            });
+  
+                            
+                            return;
+                        }
+                    }
+                });
+
+            }
+        });
+        
+        jp.add(bp);
         
         c.gridwidth = 1;
         c.anchor = GridBagConstraints.NORTHWEST;
@@ -1020,9 +1111,7 @@ public class AssetWallet  {
           
                 
                 sm.startShowCoinsService(assets, new CallbackInterface() {
-                    public void callback(Object o) {
-
-                        
+                    public void callback(Object o) {   
                         ShowCoinsResult scresult = (ShowCoinsResult) o;
                         if (scresult.status == ShowCoinsResult.STATUS_ERROR) {
                             ps.errText = "Global error";
@@ -1229,7 +1318,7 @@ public class AssetWallet  {
         ct.setLayout(gridbag);
 
         JLabel x = new JLabel("<html><div style='width:480px;text-align:center'>"
-                + "Do not close the application until all CloudCoins are deposited!</div></html>");
+                + "Do not close the application until all Assets are deposited!</div></html>");
         AppUI.setCommonFont(x);
         //AppUI.setBoldFont(x, 16);
         AppUI.setColor(x, AppUI.getErrorColor());
@@ -1442,6 +1531,8 @@ public class AssetWallet  {
                 showScreen();
             }
         });
+        
+        resetState();
         
         subInnerCore.add(bp); 
     }
@@ -1971,6 +2062,7 @@ public class AssetWallet  {
                 });
                 return;
             } else if (ar.status == AuthenticatorResult.STATUS_FINISHED) {
+                System.out.println("starting grader");
                 sm.startGraderService(new GraderCb(), ps.duplicates, null);
                 return;
             } else if (ar.status == AuthenticatorResult.STATUS_CANCELLED) {
@@ -1985,6 +2077,7 @@ public class AssetWallet  {
                 return;
             }
 
+            System.out.println("p="+ar.totalRAIDAProcessed + " v="+ar.totalCoinsProcessed + " tot="+ar.totalCoins);
             setRAIDAProgressCoins(ar.totalRAIDAProcessed, ar.totalCoinsProcessed, ar.totalCoins);
 	}
     }
