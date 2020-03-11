@@ -190,13 +190,24 @@ public class ShowCoins extends Servant {
         
         String metadata = sb.toString().replace("-", "");
         String sbdataString = sbdata.toString().replace("-", "");
-        
-        byte[] bytes = Base64.getDecoder().decode(metadata);
-        byte[] sbdataBytes = Base64.getDecoder().decode(sbdataString);
+
+        byte[] bytes;
+        byte[] sdataBytes;
+
+        try {
+            bytes = Base64.getDecoder().decode(metadata);
+            sdataBytes = Base64.getDecoder().decode(sbdataString);
+        } catch (Exception e) {
+            logger.debug(ltag, "Failed to decode metadata or data");
+            logger.debug(ltag, metadata);
+            logger.debug(ltag, sbdataString);
+            globalResult.statuses[idx].status = ShowCoinsResult.STATUS_ERROR;
+            return;
+        }
 
         metadata = new String(bytes);
         metadata = "[meta]\n" + metadata;
-        System.out.println("m="+metadata);
+
         Map<String, Properties> data;
         try {
             data = AppCore.parseINI(new StringReader(metadata));
@@ -214,9 +225,8 @@ public class ShowCoins extends Servant {
         
         globalResult.statuses[idx].status = ShowCoinsResult.STATUS_FINISHED;
         globalResult.statuses[idx].meta = meta;
-        globalResult.statuses[idx].data = sbdataBytes;
+        globalResult.statuses[idx].data = sdataBytes;
 
-        
     }
 
     public boolean queryMirror(Asset asset, int idx, String[] collect, String[] bdata, int mirrorNum) {

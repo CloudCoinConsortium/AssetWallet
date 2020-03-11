@@ -328,7 +328,7 @@ public class AssetWallet  {
             } 
         };
  
-        String[] items = {"Echo RAIDA", "Settings" };
+        String[] items = {"Echo RAIDA" };
         for (int i = 0; i < items.length; i++) {
             JMenuItem menuItem = new JMenuItem(items[i]);
             menuItem.setActionCommand("" + i);
@@ -2062,7 +2062,6 @@ public class AssetWallet  {
                 });
                 return;
             } else if (ar.status == AuthenticatorResult.STATUS_FINISHED) {
-                System.out.println("starting grader");
                 sm.startGraderService(new GraderCb(), ps.duplicates, null);
                 return;
             } else if (ar.status == AuthenticatorResult.STATUS_CANCELLED) {
@@ -2077,7 +2076,6 @@ public class AssetWallet  {
                 return;
             }
 
-            System.out.println("p="+ar.totalRAIDAProcessed + " v="+ar.totalCoinsProcessed + " tot="+ar.totalCoins);
             setRAIDAProgressCoins(ar.totalRAIDAProcessed, ar.totalCoinsProcessed, ar.totalCoins);
 	}
     }
