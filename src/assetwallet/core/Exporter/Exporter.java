@@ -1,6 +1,7 @@
 package assetwallet.core.Exporter;
 
 
+import assetwallet.AppUI;
 import org.json.JSONException;
 
 import java.io.File;
@@ -13,10 +14,14 @@ import assetwallet.core.Config;
 import assetwallet.core.GLogger;
 import assetwallet.core.RAIDA;
 import assetwallet.core.Servant;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Properties;
 import javax.imageio.ImageIO;
 
 public class Exporter extends Servant {
@@ -104,17 +109,12 @@ public class Exporter extends Servant {
             cb.callback(er);
 
         logger.info(ltag, "EXPORT finished " + fullExportPath);
+        
+        // Delete asset
+        logger.debug(ltag, "Deleting asset");
+        asset.clean(user);
     }
-/*
-    private void deletePickedCoins() {
-        for (CloudCoin cc : coinsPicked) {
-            AppCore.deleteFile(cc.originalFile);
-        }
-    }
-*/
-  
-
-    
+ 
     private boolean exportPng(String dir, Asset asset, String tag) {
         StringBuilder sb = new StringBuilder();
         boolean first = true;
@@ -144,20 +144,13 @@ public class Exporter extends Servant {
             return false;
         }
         
-        ByteArrayOutputStream ba = new ByteArrayOutputStream();
-        
-        try {
-            BufferedImage bi = ImageIO.read(new ByteArrayInputStream(bytes));
-            ImageIO.write(bi, "png", ba);
-        } catch (IOException e) {
-            er.status = ExporterResult.STATUS_ERROR;
-            er.errText = "Failed to convert asset to PNG";
-            logger.error(ltag, "Failed to convert to png: " + e.getMessage());
+        logger.debug(ltag, "Writing text");
+        bytes = writeText(asset, bytes);
+        if (bytes == null) {
+            logger.error(ltag, "Failed to write text on the image");
             return false;
         }
-       
-        bytes = ba.toByteArray();
-        
+    
         int idx = AppCore.basicPngChecks(bytes);
         if (idx == -1) {
             er.status = ExporterResult.STATUS_ERROR;
@@ -207,7 +200,7 @@ public class Exporter extends Servant {
             return false;
         }
         
-        System.out.println("f="+fileName);
+
         if (!AppCore.saveFileFromBytes(fileName, nbytes)) {
             logger.error(ltag, "Failed to write file");
             return false;
@@ -219,10 +212,77 @@ public class Exporter extends Servant {
         return true;       
     }
 
-    private void ByteArrayInputStream(byte[] bytes) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public byte[] writeText(Asset asset, byte[] bytes) {
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        BufferedImage bi;
+        try {
+            bi = ImageIO.read(bais);
+        } catch (IOException e) {
+            logger.debug(ltag, "Failed to convert bytes to Image: " + e.getMessage());
+            return null;
+        }
+        
+        Properties meta = asset.getMeta();
+        if (meta == null) {
+            logger.debug(ltag, "No meta found");
+            return null;
+        }
+        
+        
+        String fontSize = AppCore.getMetaItem(meta, "font_size");
+        if (fontSize == null)
+            fontSize = "20";
+
+        String fontFamily = AppCore.getMetaItem(meta, "font_family");
+        if (fontFamily == null)
+            fontFamily = "Arial Black";
+        
+        String fontColor = AppCore.getMetaItem(meta, "font_color");
+        if (fontColor == null)
+            fontColor = "FFFFFF";
+        
+        int x, y;
+        try {
+            
+            x = Integer.parseInt(AppCore.getMetaItem(meta, "text_location_x"));
+            y = Integer.parseInt(AppCore.getMetaItem(meta, "text_location_y"));
+        } catch (NumberFormatException e) {
+            logger.debug(ltag, "Failed to parse location in Meta. Falling back to default");
+            x = y = 0;
+        }
+        
+        int translate_sn;
+        try {
+            translate_sn = Integer.parseInt(AppCore.getMetaItem(meta, "translate_sn"));   
+        } catch (NumberFormatException e) {
+            logger.debug(ltag, "No SN translate");
+            translate_sn = 0;
+        }
+        
+        int sn = asset.sn + translate_sn;
+        
+        logger.debug(ltag, "Font " + fontFamily + " " + fontSize + ", " + fontColor + " position: " + x + "," + y);
+        logger.debug(ltag, "translate_sn " + translate_sn + " sn " + sn);
+        
+        Color color = AppUI.hex2Rgb("#" + fontColor);
+        Font font = new Font(fontFamily, Font.BOLD, 20);
+        String text = "SN #" + sn;
+       
+        Graphics graphics = bi.getGraphics();
+        //graphics.setColor(Color.LIGHT_GRAY);
+        //graphics.fillRect(0, 0, 200, 50);
+        graphics.setColor(color);
+        graphics.setFont(font);
+        graphics.drawString(text, x, y);
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(bi, "png", baos);
+        } catch (IOException e) {
+            logger.debug(ltag, "Failed to convert Image to bytes: " + e.getMessage());
+            return null;
+        }
+        
+        return baos.toByteArray();
     }
-
-    
-
 }

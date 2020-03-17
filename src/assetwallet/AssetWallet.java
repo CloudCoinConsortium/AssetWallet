@@ -47,7 +47,7 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
  * 
  */
 public class AssetWallet  {
-    String version = "1.1.15";
+    String version = "1.1.16";
 
     JPanel headerPanel;
     JPanel mainPanel;
@@ -328,7 +328,7 @@ public class AssetWallet  {
             } 
         };
  
-        String[] items = {"Echo RAIDA" };
+        String[] items = {"Echo RAIDA" , "Export All" };
         for (int i = 0; i < items.length; i++) {
             JMenuItem menuItem = new JMenuItem(items[i]);
             menuItem.setActionCommand("" + i);
@@ -370,7 +370,10 @@ public class AssetWallet  {
                     String action = jMenuItem.getActionCommand();
                     if (action.equals("0")) {
                         ps.currentScreen = ProgramState.SCREEN_ECHO_RAIDA;               
-                    } 
+                    } else if (action.equals("1")) {
+                        ps.currentScreen = ProgramState.SCREEN_EXPORT_ALL; 
+                        
+                    }
 
                     
                     showScreen();
@@ -544,6 +547,15 @@ public class AssetWallet  {
                 break;
             case ProgramState.SCREEN_EXPORT_DONE:
                 showExportDoneScreen();
+                break;
+            case ProgramState.SCREEN_EXPORT_ALL:
+                showExportAllScreen();
+                break;
+            case ProgramState.SCREEN_EXPORTING:
+                showExportingScreen();
+                break;
+            case ProgramState.SCREEN_EXPORT_ALL_DONE:
+                showExportAllDoneScreen();
                 break;
   
         }
@@ -788,6 +800,63 @@ public class AssetWallet  {
         rightPanel.add(bp);
     }
     
+    public void showExportAllDoneScreen() {
+        boolean isError = !ps.errText.equals("");
+        JPanel rightPanel = getRightPanel();    
+    
+        JPanel ct = new JPanel();
+        AppUI.setBoxLayout(ct, true);
+        AppUI.noOpaque(ct);
+        rightPanel.add(ct);
+ 
+        JLabel ltitle = AppUI.getTitle("Export Done");   
+        ct.add(ltitle);
+        AppUI.alignTop(ct);
+        AppUI.alignTop(ltitle);
+        
+        AppUI.hr(ct, 2);
+        maybeShowError(ct);
+        
+        // Outer Container
+        JPanel oct = new JPanel();
+        AppUI.noOpaque(oct);
+        
+        String dir = new File(ps.exportedFile).getParent();
+        if (dir == null)
+            return;
+        
+        if (!isError && dir != null) {
+            JLabel txt = new JLabel("<html><div style='width: 720px; text-align:center'>"
+                    + "Exported to folder " + dir + "</div></html>");
+            AppUI.setFont(txt, 16);
+            AppUI.alignCenter(txt);
+            oct.add(txt);
+
+            if (Desktop.isDesktopSupported()) {
+                try {
+                    Desktop.getDesktop().open(new File(dir));
+                } catch (IOException e) {
+                    wl.error(ltag, "Failed to open browser: " + e.getMessage());
+                }
+            }
+        }
+        
+        JPanel bp = getOneButtonPanelCustom("Continue", new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ps.currentScreen = ProgramState.SCREEN_SHOW_ASSETS;
+                showScreen();
+            }
+        });
+        
+        resetState();
+        
+
+        AppUI.hr(rightPanel, 5);
+        rightPanel.add(oct); 
+        
+        rightPanel.add(bp);
+    }
+    
     public void showAssetScreen() {
         boolean isError = !ps.errText.equals("");
 
@@ -942,8 +1011,183 @@ public class AssetWallet  {
         jl.setText("<html><div style='text-align:center'>" + title + "</div></html>");
         jdate.setText(date);
         pbar.setVisible(false);
+        pbar.repaint();
+    }
+    
+    public void showExportingScreen() {
+        JPanel subInnerCore = getModalJPanel("Export in Progress");
+        maybeShowError(subInnerCore);
+
+        JPanel ct = new JPanel();
+        AppUI.noOpaque(ct);
+        subInnerCore.add(ct);
+        
+        GridBagLayout gridbag = new GridBagLayout();
+        GridBagConstraints c = new GridBagConstraints();      
+        ct.setLayout(gridbag);
+
+        JLabel x = new JLabel("<html><div style='width:480px;text-align:center'>"
+                + "Do not close the application until all Assets are exported!</div></html>");
+        AppUI.setCommonFont(x);
+        //AppUI.setBoldFont(x, 16);
+        AppUI.setColor(x, AppUI.getErrorColor());
+        c.anchor = GridBagConstraints.CENTER;
+        c.insets = new Insets(10, 0, 4, 0); 
+        c.gridx = GridBagConstraints.RELATIVE;
+        c.gridy = 0;
+        gridbag.setConstraints(x, c);
+        ct.add(x);
+        
+        pbarText = new JLabel("");
+        AppUI.setCommonFont(pbarText);
+        c.insets = new Insets(40, 20, 4, 0);
+        c.gridx = GridBagConstraints.RELATIVE;
+        c.gridy = 1;
+        gridbag.setConstraints(pbarText, c);
+        ct.add(pbarText);
+        
+        // ProgressBar
+        pbar = new JProgressBar();
+        pbar.setStringPainted(true);
+        AppUI.setMargin(pbar, 0);
+        AppUI.setSize(pbar, (int) (tw / 2.6f) , 50);
+        pbar.setMinimum(0);
+        pbar.setMaximum(24);
+        pbar.setValue(0);
+        pbar.setUI(new FancyProgressBar());
+        AppUI.noOpaque(pbar);
+        
+        c.insets = new Insets(20, 20, 4, 0);
+        c.gridx = GridBagConstraints.RELATIVE;
+        c.gridy = 2;
+        gridbag.setConstraints(pbar, c);
+        ct.add(pbar);
+        
+        subInnerCore.add(AppUI.hr(120));
+        
+        Thread t = new Thread(new Runnable() {
+            public void run(){
+                pbar.setVisible(true);
+
+                pbarText.setText("Exporting assets ...");
+                pbarText.repaint();
+                pbar.setMaximum(ps.assets.length);
+                pbar.setMinimum(0);
+                
+                for (int i = 0; i < ps.assets.length; i++) {
+                    final int fi = i;
+          
+                    ps.asyncCanGo = false;
+                    sm.startExporterService(ps.assets[i], new CallbackInterface() {
+                        public void callback(Object o) {   
+                            ExporterResult eresult = (ExporterResult) o;
+                            if (eresult.status == ExporterResult.STATUS_ERROR) {
+                                if (!eresult.errText.isEmpty()) {
+                                    ps.errText = eresult.errText;
+                                } else {    
+                                    ps.errText = "Failed to export asset #" + ps.assets[fi].sn;
+                                }
+                            
+                                return;
+                            }
+                            
+                            ps.exportedFile = eresult.exportedFileNames.get(0);
+                            ps.asyncCanGo = true;
+                            return;
+                        }
+                    });
+                    
+                    while (!ps.asyncCanGo) {
+                        try {
+                            Thread.sleep(50);
+                        } catch (InterruptedException e) {}
+                    }
+                    
+                    pbarText.setText("Exported " + i + " / " + ps.assets.length + " assets");
+                    pbarText.repaint();
+                    pbar.setValue(i);
+                    pbarText.repaint();
+                    pbar.repaint();
+                    
+                    
+                    
+                    
+                    
+                };
+ 
+                ps.currentScreen = ProgramState.SCREEN_EXPORT_ALL_DONE;
+                showScreen();
+                //sm.startUnpackerService(new UnpackerCb());
+            }
+        });
+        
+        t.start();
+    }
+    
+    
+    public void showExportAllScreen() {
+        JPanel subInnerCore = getModalJPanel("Export Confirmation");
+     
+        // Container
+        JPanel ct = new JPanel();
+        AppUI.noOpaque(ct);
+        subInnerCore.add(ct);
+        
+        GridBagLayout gridbag = new GridBagLayout();
+        GridBagConstraints c = new GridBagConstraints();      
+        ct.setLayout(gridbag);
+        
+        int y = 0;
+       
+        
+        // Memo
+        JLabel x = new JLabel("Total Assets:   ");
+        AppUI.setCommonFont(x);
+        c.insets = new Insets(0, 0, 4, 0);
+        c.anchor = GridBagConstraints.EAST;
+        c.gridx = GridBagConstraints.RELATIVE;
+        c.gridy = y;
+        gridbag.setConstraints(x, c);
+        ct.add(x);
+
+        x = new JLabel("" + ps.assets.length);
+        AppUI.setCommonBoldFont(x);
+        c.anchor = GridBagConstraints.WEST;
+        c.gridx = GridBagConstraints.RELATIVE;;
+        c.gridy = y;
+        gridbag.setConstraints(x, c);
+        ct.add(x);
+               
+        y++; 
+        
+        
+        // Q
+        x = new JLabel("Do you wish to continue?");
+        AppUI.setCommonFont(x);
+        c.insets = new Insets(32, 0, 4, 0);
+        c.anchor = GridBagConstraints.CENTER;
+        c.gridx = GridBagConstraints.RELATIVE;;
+        c.gridy = y;
+        c.gridwidth = 2;
+        gridbag.setConstraints(x, c);
+        ct.add(x);
+               
+        y++; 
+             
+        JPanel bp = getTwoButtonPanel(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                ps.exportedFiles = 0;
+                ps.currentScreen = ProgramState.SCREEN_EXPORTING;
+                showScreen();
+            }
+        });
+  
+        
+        subInnerCore.add(bp);    
     }
    
+    
+    
     public void showAssetsScreen() {      
         JPanel rightPanel = getRightPanel(AppUI.getColor4());    
         JPanel ct = new JPanel();
@@ -1372,12 +1616,12 @@ public class AssetWallet  {
 
                 }
        
-                pbarText.setText("Moving coins ...");
+                pbarText.setText("Moving assets ...");
                 for (String filename : ps.files) {
                     AppCore.moveToFolderNoTs(filename, Config.DIR_IMPORT, Config.DEFAULT_NAME);
                 }
 
-                pbarText.setText("Unpacking coins ...");
+                pbarText.setText("Unpacking assets ...");
                 pbarText.repaint();
                 
                 sm.startUnpackerService(new UnpackerCb());
@@ -1516,6 +1760,26 @@ public class AssetWallet  {
             c.gridy = y;
             gridbag.setConstraints(x, c);
             ct.add(x);
+        }
+        
+        if (ps.duplicates.size() != 0) {
+            x = new JLabel("Duplicates:");
+            AppUI.setCommonFont(x);
+            c.anchor = GridBagConstraints.EAST;
+            c.insets = new Insets(10, 0, 4, 10);
+            c.gridx = 0;
+            c.gridy = y;
+            gridbag.setConstraints(x, c);
+            ct.add(x);
+        
+            x = new JLabel("" + ps.duplicates.size());
+            AppUI.setCommonBoldFont(x);
+            c.anchor = GridBagConstraints.WEST;
+            c.gridx = GridBagConstraints.RELATIVE;
+            c.gridy = y;
+            gridbag.setConstraints(x, c);
+            ct.add(x);
+            
         }
         
         

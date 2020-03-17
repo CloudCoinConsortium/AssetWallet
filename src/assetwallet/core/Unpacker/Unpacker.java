@@ -287,13 +287,12 @@ public class Unpacker extends Servant {
         while (true) {
             length = AppCore.getUint32(bytes, idx + 4 + i);
             if (length == 0) {
-                i += 12;
-                if (i > bytes.length) {
+                if (idx + 4 + i + 12 > bytes.length) {
                     logger.error(ltag, "CloudCoin was not found");
                     return false;
                 }
             }
-                       
+
             StringBuilder sb = new StringBuilder();
             sb.append(Character.toChars(bytes[idx + 4 + i + 4]));
             sb.append(Character.toChars(bytes[idx + 4 + i + 5]));

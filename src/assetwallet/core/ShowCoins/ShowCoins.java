@@ -94,7 +94,17 @@ public class ShowCoins extends Servant {
         StringBuilder sb;
         String[] requests;
         
-        logger.debug(ltag, "showing asset " + asset.sn);
+        logger.debug(ltag, "Showing asset " + asset.sn);
+        
+        if (tryCache(asset)) {
+            logger.debug(ltag, "Read img/meta from the filesystem: " + asset.originalFile);
+            globalResult.statuses[idx].status = ShowCoinsResult.STATUS_FINISHED;
+            globalResult.statuses[idx].meta = asset.getMeta();
+            globalResult.statuses[idx].data = asset.getData();
+            return;
+        }
+        
+        logger.debug(ltag, "Showing asset from RAIDA " + asset.sn);
         
         //sbs = new StringBuilder[RAIDA.TOTAL_RAIDA_COUNT];
         requests = new String[RAIDA.TOTAL_RAIDA_COUNT];
@@ -208,6 +218,8 @@ public class ShowCoins extends Servant {
         metadata = new String(bytes);
         metadata = "[meta]\n" + metadata;
 
+        saveData(asset, metadata, sdataBytes);
+        
         Map<String, Properties> data;
         try {
             data = AppCore.parseINI(new StringReader(metadata));
@@ -355,5 +367,79 @@ public class ShowCoins extends Servant {
         return true;        
     }
     
+    public void saveData(Asset asset, String metadata, byte[] bytes) {
+        String folder = AppCore.getUserDir(Config.DIR_GALLERY, user);
+        
+        String basename = new File(asset.originalFile).getName();
+        String imageName = basename + ".jpg";
+        String metaName = basename + ".meta";
+        
+        String imgPath = folder + File.separator + imageName;
+        String metaPath = folder + File.separator + metaName;
+        
+        File fimg = new File(imgPath);
+        File fmeta = new File(metaPath);
+                
+        if (fimg.exists())
+            fimg.delete();
+        
+        if (fmeta.exists())
+            fmeta.delete();
+        
+        
+        logger.debug(ltag, "Saving meta " + metaPath);
+        if (!AppCore.saveFile(metaPath, metadata)) {
+            logger.debug(ltag, "Failed to save metadata");
+        }
+        
+        logger.debug(ltag, "Saving img " + imgPath);
+        if (!AppCore.saveFileFromBytes(imgPath, bytes)) {
+            logger.debug(ltag, "Failed to save files");            
+        }
+    }
+    
+    public boolean tryCache(Asset asset) {
+        String folder = AppCore.getUserDir(Config.DIR_GALLERY, user);
+        
+        String basename = new File(asset.originalFile).getName();
+        String imageName = basename + ".jpg";
+        String metaName = basename + ".meta";
+        
+        String imgPath = folder + File.separator + imageName;
+        String metaPath = folder + File.separator + metaName;
+        
+        File fimg = new File(imgPath);
+        File fmeta = new File(metaPath);
+                
+        if (!fimg.exists() || !fmeta.exists()) 
+            return false;
+       
+        byte[] bytes = AppCore.loadFileToBytes(imgPath);
+        if (bytes == null)
+            return false;
+        
+        String metadata = AppCore.loadFile(metaPath);
+        if (metadata == null) 
+            return false;
+        
+        Map<String, Properties> data;
+        try {
+            data = AppCore.parseINI(new StringReader(metadata));
+        } catch (IOException e) {
+            logger.debug(ltag, "Failed to parse cached metadata");
+            return false;
+        }
+
+        Properties meta = data.get("meta");
+        if (meta == null) {
+            logger.error(ltag, "Failed to parse properties: " + metadata);
+            return false;
+        }
+        
+        logger.debug(ltag, "Successfully extracted data from filesystem");
+        asset.setData(bytes, meta);
+        
+        return true;
+    }
     
 }

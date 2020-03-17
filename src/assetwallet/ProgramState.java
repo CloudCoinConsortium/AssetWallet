@@ -26,6 +26,9 @@ public class ProgramState {
     final public static int SCREEN_DEPOSIT_DONE = 8;
     final public static int SCREEN_SHOW_ASSET = 9;
     final public static int SCREEN_EXPORT_DONE = 10;
+    final public static int SCREEN_EXPORT_ALL = 11;
+    final public static int SCREEN_EXPORTING = 12;
+    final public static int SCREEN_EXPORT_ALL_DONE = 13;
 
     final static int CB_STATE_INIT = 1;
     final static int CB_STATE_RUNNING = 2;
@@ -88,11 +91,13 @@ public class ProgramState {
 
     int failedFiles;
     
-   
+    int exportedFiles;
     
     boolean finishedMc;
 
     int exportType;
+    
+    boolean asyncCanGo;
     
     public ProgramState() {
         currentScreen = SCREEN_AGREEMENT;
@@ -137,6 +142,8 @@ public class ProgramState {
         finishedMc = false;
 
         exportType = 0;
+        
+        exportedFiles = 0;
     }
  
     public String toString() {

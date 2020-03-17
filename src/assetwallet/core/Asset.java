@@ -1,5 +1,6 @@
 package assetwallet.core;
 
+import java.io.File;
 import org.json.JSONException;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -416,4 +417,27 @@ public class Asset {
 		edHex += Integer.toHexString(year);
 	}
 
+        
+    public void clean(String user) {
+        if (originalFile == null)
+            return;
+        
+        File f = new File(originalFile);
+        
+        String folder = AppCore.getUserDir(Config.DIR_GALLERY, user);
+        String basename = f.getName();
+        String imageName = basename + ".jpg";
+        String metaName = basename + ".meta";
+        String imgPath = folder + File.separator + imageName;
+        String metaPath = folder + File.separator + metaName;       
+        File fimg = new File(imgPath);
+        File fmeta = new File(metaPath);                
+        if (fimg.exists()) 
+            fimg.delete();
+        
+        if (fmeta.exists()) 
+            fmeta.delete();
+        
+        f.delete();
+    }
 }

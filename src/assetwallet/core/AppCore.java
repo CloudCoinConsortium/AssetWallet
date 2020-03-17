@@ -128,6 +128,7 @@ public class AppCore {
             Config.DIR_DETECTED,
             Config.DIR_EXPORT,
             Config.DIR_FRACKED,
+            Config.DIR_GALLERY,
             Config.DIR_IMPORT,
             Config.DIR_IMPORTED,
             Config.DIR_LOGS,
@@ -825,81 +826,7 @@ public class AppCore {
         return null;
     }
     
-    public static String getReceiptHtml(String hash, String user) {
-        if (hash == "dummy")
-            return null;
-        
-        String receiptsFile = AppCore.getUserDir(Config.DIR_RECEIPTS, user);
-        receiptsFile += File.separator + hash + ".txt";
-                
-        String data = AppCore.loadFile(receiptsFile);
-        if (data == null) {
-            logger.error(ltag, "File " + receiptsFile + " failed to open");
-            return null;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        try {
-            JSONObject o = new JSONObject(data);
-                    
-            String rId = o.getString("receipt_id");
-            String time = o.getString("time");
-            
-            int total_authentic = o.optInt("total_authentic");
-            int total_fracked = o.optInt("total_fracked");
-            int total_counterfeit = o.optInt("total_counterfeit");
-            int total_lost = o.optInt("total_lost");
-            int total_unchecked = o.optInt("total_unchecked");
-            int total_prevs = o.optInt("prev_imported");
-            
-            
-            sb.append("<p>Receipt <b>#");
-            sb.append(rId);
-            sb.append("</b></p><br><br><p>");
-            sb.append(time);
-            sb.append("</p><br><br>");
-            sb.append("<p>Total Authentic: <b>");
-            sb.append(total_authentic);
-            sb.append("</b></p><p>Total Fracked: <b>");
-            sb.append(total_fracked);
-            sb.append("</b></p><p>Total Counterfeit: <b>");
-            sb.append(total_counterfeit);
-            sb.append("</b></p><p>Total Lost: <b>");
-            sb.append(total_lost);
-            sb.append("</b></p><p>Total Unchecked: <b>");
-            sb.append(total_unchecked);
-            sb.append("</b></p><p>Total Previously Deposited: <b>");
-            sb.append(total_prevs);
-            sb.append("</b></p><br><br><p>Details:</p><br>");
-            
-            JSONArray a = o.getJSONArray("receipt_detail");
-            
-            for (int i = 0; i < a.length(); i++) {
-                JSONObject io = a.getJSONObject(i);
-                
-                String nnsn = io.getString("nn.sn");
-                String status = io.getString("status");
-                String pown = io.getString("pown");
-                String note = io.getString("note");
-
-                sb.append("<p>nn.sn: ");
-                sb.append(nnsn);
-                sb.append("</p><p>status: ");
-                sb.append(status);
-                sb.append("</p><p>pown: ");
-                sb.append(pown);
-                sb.append("</p><p>note: ");
-                sb.append(note);
-                sb.append("</p><br>");                
-            }
-                  
-        } catch (JSONException e) {
-            logger.error(ltag, "Failed to parse receipt: " + e.getMessage());
-            return null;
-        }
-        
-        return sb.toString();
-    }
+    
     
     static public String getLogPath() {
         return getLogDir() + File.separator + Config.MAIN_LOG_FILENAME;
