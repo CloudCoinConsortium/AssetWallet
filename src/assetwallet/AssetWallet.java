@@ -791,7 +791,8 @@ public class AssetWallet  {
         
         if (Desktop.isDesktopSupported()) {
             try {
-                Desktop.getDesktop().open(new File(ps.exportedFile));
+                String dir = new File(ps.exportedFile).getParent();
+                Desktop.getDesktop().open(new File(dir));
             } catch (IOException e) {
                 wl.error(ltag, "Failed to open browser: " + e.getMessage());
             }
