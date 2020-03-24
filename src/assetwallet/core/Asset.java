@@ -143,7 +143,7 @@ public class Asset {
 	public String getFileName() {
 		String result;
 
-		result = getDenomination() + ".Celebrium." + this.nn + "." + this.sn + ".";
+		result = getDenomination() + ".ECDT." + this.nn + "." + this.sn + ".";
 		if (this.tag != null && !this.tag.isEmpty()) {
 			result += this.tag + ".";
 		}

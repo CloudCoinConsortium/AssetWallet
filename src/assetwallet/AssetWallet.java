@@ -47,7 +47,7 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
  * 
  */
 public class AssetWallet  {
-    String version = "1.1.16";
+    String version = "0.0.1";
 
     JPanel headerPanel;
     JPanel mainPanel;
@@ -244,8 +244,6 @@ public class AssetWallet  {
         //p.add(icon3);
         
         if (ps.currentScreen == ProgramState.SCREEN_AGREEMENT) {
-             // Init Label
-            //JLabel titleText = new JLabel("Asset Wallet " + version);
             JPanel titleText = new JPanel();
             AppUI.setSize(titleText, 200, 68);
             AppUI.noOpaque(titleText);
@@ -261,7 +259,6 @@ public class AssetWallet  {
             
             return;
         } else {
-            //JLabel titleText = new JLabel("Asset Wallet");
             JPanel titleText = new JPanel();
             AppUI.setSize(titleText, 200, 68);
             AppUI.noOpaque(titleText);
@@ -935,7 +932,7 @@ public class AssetWallet  {
         };*/
 
         
-        AppUI.setMetaItem(meta, jp, "id", "ID #");
+        //AppUI.setMetaItem(meta, jp, "id", "ID #");
         AppUI.setMetaItem(meta, jp, "publisher", "Publisher");
         AppUI.setMetaItem(meta, jp, "series_name", "Series");
         AppUI.setMetaItem(meta, jp, "date_of_creation", "Date");
@@ -2115,7 +2112,7 @@ public class AssetWallet  {
         JPanel subInnerCore = AppUI.createRoundedPanel(corePanel, AppUI.getColor4(), 60, 20);
   
         // Title
-        JLabel text = new JLabel("Asset Wallet");
+        JLabel text = new JLabel("ECD Token Vault");
         AppUI.alignCenter(text);
         AppUI.setBoldFont(text, 24);
         subInnerCore.add(text);

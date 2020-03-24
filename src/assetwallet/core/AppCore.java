@@ -1327,4 +1327,27 @@ public class AppCore {
         
         return i;
     }
+    
+    public static String getExpstring(int number) {
+        int zeroes = 0;
+        
+        if (number < 10)
+            zeroes = 4;
+        else if (number < 100)
+            zeroes = 3;
+        else if (number < 1000)
+            zeroes = 2;
+        else if (number < 10000)
+            zeroes = 1;
+        else 
+            zeroes = 0;
+        
+        String s = "ECDT";
+        for (int i = 0; i < zeroes; i++)
+            s += "0";
+        
+        s += "" + number;
+        
+        return s;
+    }
 }

@@ -128,7 +128,22 @@ public class Exporter extends Servant {
         
         data = sb.toString();
         
-        fileName = asset.sn + ".Celebrium." + tag + ".png";
+        Properties meta = asset.getMeta();
+        if (meta == null) {
+            logger.debug(ltag, "No meta found");
+            return false;
+        }
+        int translate_sn;
+        try {
+            translate_sn = Integer.parseInt(AppCore.getMetaItem(meta, "translate_sn"));   
+        } catch (NumberFormatException e) {
+            logger.debug(ltag, "No SN translate");
+            translate_sn = 0;
+        }
+        
+        int n = asset.sn - translate_sn;
+        String r = AppCore.getExpstring(n);
+        fileName = asset.nn + "." + r + "." + tag + ".png";
         
         File sdir = new File(dir);        
         if (!sdir.isDirectory()) {
@@ -258,15 +273,16 @@ public class Exporter extends Servant {
             logger.debug(ltag, "No SN translate");
             translate_sn = 0;
         }
-        
-        int sn = asset.sn + translate_sn;
+                
+        int sn = asset.sn - translate_sn;        
+        String r = AppCore.getExpstring(sn);
         
         logger.debug(ltag, "Font " + fontFamily + " " + fontSize + ", " + fontColor + " position: " + x + "," + y);
         logger.debug(ltag, "translate_sn " + translate_sn + " sn " + sn);
         
         Color color = AppUI.hex2Rgb("#" + fontColor);
         Font font = new Font(fontFamily, Font.BOLD, 20);
-        String text = "SN #" + sn;
+        String text = r;
        
         Graphics graphics = bi.getGraphics();
         //graphics.setColor(Color.LIGHT_GRAY);
