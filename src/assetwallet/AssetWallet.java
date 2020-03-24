@@ -91,7 +91,7 @@ public class AssetWallet  {
         AppUI.init(tw, th); 
         AppCore.logSystemInfo(version);
         
-        headerHeight = th / 10;
+        headerHeight = 68;
         
         initMainScreen();
         
@@ -185,9 +185,10 @@ public class AssetWallet  {
         
         // Init header
         headerPanel = new JPanel();
+        //headerPanel =  new Bgpanel("resources/ECDTokenVaultBanner_WithText.png");
         AppUI.setBoxLayout(headerPanel, false);
         AppUI.setSize(headerPanel, tw, headerHeight);
-        AppUI.setBackground(headerPanel, AppUI.getColor0());
+       // AppUI.setBackground(headerPanel, AppUI.getColor0());
         AppUI.alignLeft(headerPanel);
         AppUI.alignTop(headerPanel);
          
@@ -198,11 +199,14 @@ public class AssetWallet  {
     
     public void fillHeaderPanel() {
         //fills header with objects
-        JPanel p = new JPanel();
+        Bgpanel p = new Bgpanel("resources/ECDTokenVaultBanner_WithText.png");
+        //JPanel p = new JPanel();
         AppUI.noOpaque(p);
         GridBagLayout gridbag = new GridBagLayout();
        
         p.setLayout(gridbag);
+        headerPanel.add(p);
+
         
         GridBagConstraints c = new GridBagConstraints();      
         //c.fill = GridBagConstraints.HORIZONTAL;
@@ -228,17 +232,23 @@ public class AssetWallet  {
             img = ImageIO.read(getClass().getClassLoader().getResource("resources/CloudCoinLogo2.png"));
             icon3 = new JLabel(new ImageIcon(img));
             
+            
+            
+            
         } catch (Exception ex) {
             return;
         }
         
-        headerPanel.add(p);
+        
         gridbag.setConstraints(icon3, c);
         //p.add(icon3);
         
         if (ps.currentScreen == ProgramState.SCREEN_AGREEMENT) {
              // Init Label
-            JLabel titleText = new JLabel("Asset Wallet " + version);
+            //JLabel titleText = new JLabel("Asset Wallet " + version);
+            JPanel titleText = new JPanel();
+            AppUI.setSize(titleText, 200, 68);
+            AppUI.noOpaque(titleText);
             AppUI.setTitleSemiBoldFont(titleText, 32);
             c.anchor = GridBagConstraints.WEST;
             c.insets = new Insets(0, 40, 0, tw ); 
@@ -251,7 +261,10 @@ public class AssetWallet  {
             
             return;
         } else {
-            JLabel titleText = new JLabel("Asset Wallet");
+            //JLabel titleText = new JLabel("Asset Wallet");
+            JPanel titleText = new JPanel();
+            AppUI.setSize(titleText, 200, 68);
+            AppUI.noOpaque(titleText);
             AppUI.setHandCursor(titleText);
             MouseAdapter mal = new MouseAdapter() {
                 public void mouseReleased(MouseEvent evt) {
@@ -1914,19 +1927,20 @@ public class AssetWallet  {
     }
     
     public JPanel getRightPanel() {
-         return getRightPanel(AppUI.getColor2());
+         return getRightPanel(AppUI.getColor4());
     }
     
     public JPanel getRightPanel(Color color) {
         JPanel mwrapperPanel = new JPanel();
         
+        //JPanel mwrapperPanel = new Bgpanel("resources/ECDTokenVaultBody.png");
         AppUI.setBoxLayout(mwrapperPanel, true);
         AppUI.noOpaque(mwrapperPanel);
         AppUI.alignLeft(mwrapperPanel);
         AppUI.alignTop(mwrapperPanel);
         AppUI.setSize(mwrapperPanel, tw - 48, th);
 
-        JPanel subInnerCore = AppUI.createRoundedPanel(mwrapperPanel, color, 20);
+        JPanel subInnerCore = AppUI.createRoundedPanel(mwrapperPanel, color, 20, 20);
         AppUI.setSize(subInnerCore, tw - 48, th - headerHeight - 120);
         
         corePanel.add(mwrapperPanel);
@@ -1939,7 +1953,7 @@ public class AssetWallet  {
     
     public void showSupportScreen() {
 
-        JPanel rightPanel = getRightPanel();    
+        JPanel rightPanel = getRightPanel(AppUI.getColor4());    
         JPanel ct = new JPanel();
         AppUI.setBoxLayout(ct, true);
         AppUI.noOpaque(ct);
@@ -2094,24 +2108,29 @@ public class AssetWallet  {
     
     public void showAgreementScreen() {
         
-        JPanel subInnerCore = AppUI.createRoundedPanel(corePanel);
-        
+        JPanel subInnerCore = AppUI.createRoundedPanel(corePanel, AppUI.getColor4(), 60, 20);
+  
         // Title
-        JLabel text = new JLabel("CloudCoin Wallet");
+        JLabel text = new JLabel("Asset Wallet");
         AppUI.alignCenter(text);
         AppUI.setBoldFont(text, 24);
         subInnerCore.add(text);
  
+        AppUI.hr(subInnerCore, 20);
+              
         // Agreement Panel        
-        JPanel agreementPanel = AppUI.createRoundedPanel(subInnerCore);
+        JPanel agreementPanel = AppUI.createRoundedPanelNoBg(subInnerCore, AppUI.getColor3(), 20, 20);
+        //JPanel agreementPanel = new JPanel();
         AppUI.roundCorners(agreementPanel, AppUI.getColor3(), 20);
         AppUI.alignCenter(agreementPanel);
-             
+
         // Title 
         text = new JLabel("Terms and Conditions");
         AppUI.alignCenter(text);
         AppUI.setBoldFont(text, 24);
         agreementPanel.add(text);
+        
+        
         
         // Space
         AppUI.hr(agreementPanel,  tw * 0.0082 * 2);
@@ -2186,18 +2205,18 @@ public class AssetWallet  {
       //  scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);     
         agreementPanel.add(scrollPane);
       
-        subInnerCore.add(agreementPanel);
+        //subInnerCore.add(agreementPanel);
     }
     
     public JPanel getModalJPanel(String title) {
         
-        JPanel rightPanel = getRightPanel();
+        JPanel rightPanel = getRightPanel(AppUI.getColor4());
 
         JPanel xpanel = new JPanel(new GridBagLayout());
         AppUI.noOpaque(xpanel);
         rightPanel.add(xpanel); 
         
-        JPanel subInnerCore = AppUI.createRoundedPanel(xpanel, AppUI.getColor12(), 20);
+        JPanel subInnerCore = AppUI.createRoundedPanelNoBg(xpanel, AppUI.getColor12(), 20, 20);
         AppUI.setSize(subInnerCore, 718, 446);
 
         AppUI.hr(subInnerCore, 14);

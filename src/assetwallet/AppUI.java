@@ -18,6 +18,7 @@ import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Image;
 import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -392,7 +393,7 @@ public class AppUI {
     public static JFrame getMainFrame(String version) {
         JFrame frame = new JFrame();
         
-        frame.setTitle("CloudCoin Wallet " + version);
+        frame.setTitle("Asset Wallet " + version);
         frame.setLayout(new BorderLayout());
         frame.setSize(new Dimension(tw, th));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -404,7 +405,8 @@ public class AppUI {
         cl = AppUI.class.getClassLoader();
 
         frame.setIconImage(
-            new ImageIcon(cl.getResource("resources/CloudCoinLogo2.png")).getImage()
+            //new ImageIcon(cl.getResource("resources/CloudCoinLogo2.png")).getImage()
+             new ImageIcon(cl.getResource("resources/icon.png")).getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH)
         );
         
         return frame;
@@ -419,15 +421,19 @@ public class AppUI {
     }
    
     public static JPanel createRoundedPanel(JPanel parent, Color color, int sideMargin, int radius) {
-        JPanel p = new JPanel();
+        //JPanel p = new JPanel();
+        Bgpanel p = new Bgpanel("resources/ECDTokenVaultBody.png", color);
         
         AppUI.setBoxLayout(p, true);
         AppUI.alignCenter(p);
-        AppUI.roundCorners(p, color, radius);
+        //AppUI.roundCorners(p, color, radius);
+        AppUI.setMargin(p, 20);
         AppUI.noOpaque(p);
         
         JPanel subInnerCore = new JPanel();
+        
         AppUI.setBoxLayout(subInnerCore, true);
+        //AppUI.roundCorners(subInnerCore, color, radius);
         AppUI.alignCenter(subInnerCore);
         AppUI.noOpaque(subInnerCore);
         AppUI.setMargin(subInnerCore, 0, sideMargin, 20, sideMargin);
@@ -440,6 +446,33 @@ public class AppUI {
         
         return subInnerCore;
     }
+    
+    public static JPanel createRoundedPanelNoBg(JPanel parent, Color color, int sideMargin, int radius) {
+        JPanel p = new JPanel();
+        
+        AppUI.setBoxLayout(p, true);
+        AppUI.alignCenter(p);
+        AppUI.roundCorners(p, color, radius);
+        //AppUI.setMargin(p, 20);
+        AppUI.noOpaque(p);
+        
+        JPanel subInnerCore = new JPanel();
+        
+        AppUI.setBoxLayout(subInnerCore, true);
+        //AppUI.roundCorners(subInnerCore, color, radius);
+        AppUI.alignCenter(subInnerCore);
+        AppUI.noOpaque(subInnerCore);
+        AppUI.setMargin(subInnerCore, 0, sideMargin, 20, sideMargin);
+        p.add(subInnerCore);
+           
+        parent.add(p);
+        
+        p.setAlignmentY(Component.CENTER_ALIGNMENT);
+        subInnerCore.setAlignmentY(Component.CENTER_ALIGNMENT);
+        
+        return subInnerCore;
+    }
+    
     
     //AGIEEE
     public static JLabel getTitle(String s) {
