@@ -1372,7 +1372,7 @@ public class AssetWallet  {
                             //System.out.println(scresult.getOperation(idx) + " " 
                               //      + scresult.getProgress(idx) + "/" + scresult.getProgressTotal(idx) + " st="+ scresult.getStatus(idx));
 
-                            if (ps.currentScreen == ProgramState.SCREEN_SHOW_ASSETS) {
+                            //if (ps.currentScreen == ProgramState.SCREEN_SHOW_ASSETS) {
                                 JComponent[] jks = (JComponent[]) fassets[idx].getPrivate();
                                 JLabel jl = (JLabel) jks[1];
                                 JProgressBar pbar = (JProgressBar) jks[2];
@@ -1389,17 +1389,20 @@ public class AssetWallet  {
                                     byte[] img = scresult.getData(idx);
                                     
                                     setAssetBlock(fassets[idx], meta, img);
+                                    fassets[idx].setData(img, meta);
                                             
                                 } else if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_PROCESSING) {
                                     int progress = (int) (((double) scresult.getProgress(idx) 
                                             / (double) scresult.getProgressTotal(idx)) * 100);
                                     jl.setText(scresult.getOperation(idx) + " " + progress + "%");
                                 }
-                            }
-                            
+                          //  }
+                            /*
                             if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_FINISHED)
                                 fassets[idx].setData(scresult.getData(idx), scresult.getMeta(idx));
-
+                            else if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_ERROR)
+                                fassets[idx].setData(scresult.getData(idx), scresult.getMeta(idx));
+*/
                             return;
                         } else if (scresult.status == ShowCoinsResult.STATUS_CANCELLED) {
                             wl.debug(ltag, "Cancelled");
