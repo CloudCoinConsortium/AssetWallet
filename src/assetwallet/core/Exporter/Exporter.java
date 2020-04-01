@@ -119,40 +119,29 @@ public class Exporter extends Servant {
         StringBuilder sb = new StringBuilder();
         boolean first = true;
         int total = 0;
-        String fileName;
         String data;
 
         sb.append("{" + ls + "\t\"celebrium\": [");
         sb.append(asset.getSimpleJson());
         sb.append("]" + ls + "}");
         
-        data = sb.toString();
-        
-        Properties meta = asset.getMeta();
-        if (meta == null) {
-            logger.debug(ltag, "No meta found");
-            return false;
-        }
-        int translate_sn;
-        try {
-            translate_sn = Integer.parseInt(AppCore.getMetaItem(meta, "translate_sn"));   
-        } catch (NumberFormatException e) {
-            logger.debug(ltag, "No SN translate");
-            translate_sn = 0;
-        }
-        
-        int n = asset.sn - translate_sn;
-        String r = AppCore.getExpstring(n);
-        fileName = asset.nn + "." + r + "." + tag + ".png";
-        
+        data = sb.toString();        
         File sdir = new File(dir);        
         if (!sdir.isDirectory()) {
             dir = AppCore.getUserDir(Config.DIR_EXPORT, user);
         }
 
+        String fileName = asset.getMyFilename();
         fileName = dir + File.separator + fileName;
         logger.debug(ltag, "File name " + fileName);
-     
+         File f = new File(fileName);
+        if (f.exists()) {
+            logger.error(ltag, "File exists: " + fileName);
+            er.status = ExporterResult.STATUS_ERROR;
+            er.errText = "Exported file already exists: " + fileName;
+            return false;
+        }
+   
         byte[] bytes = asset.getData();
         if (bytes == null) {
             logger.error(ltag, "Failed to load bytes from asset");
@@ -207,13 +196,6 @@ public class Exporter extends Servant {
             nbytes[i + idx + 8 + dl + 4 + 4] = bytes[i + idx + 4];
         }
 
-        File f = new File(fileName);
-        if (f.exists()) {
-            logger.error(ltag, "File exists: " + fileName);
-            er.status = ExporterResult.STATUS_ERROR;
-            er.errText = "Exported file with the same tag already exists";
-            return false;
-        }
         
 
         if (!AppCore.saveFileFromBytes(fileName, nbytes)) {
@@ -265,20 +247,12 @@ public class Exporter extends Servant {
             logger.debug(ltag, "Failed to parse location in Meta. Falling back to default");
             x = y = 0;
         }
-        
-        int translate_sn;
-        try {
-            translate_sn = Integer.parseInt(AppCore.getMetaItem(meta, "translate_sn"));   
-        } catch (NumberFormatException e) {
-            logger.debug(ltag, "No SN translate");
-            translate_sn = 0;
-        }
-                
-        int sn = asset.sn - translate_sn;        
+           
+        int sn = asset.getTranslatedSN();      
         String r = AppCore.getExpstring(sn);
         
         logger.debug(ltag, "Font " + fontFamily + " " + fontSize + ", " + fontColor + " position: " + x + "," + y);
-        logger.debug(ltag, "translate_sn " + translate_sn + " sn " + sn);
+        
         
         Color color = AppUI.hex2Rgb("#" + fontColor);
         Font font = new Font(fontFamily, Font.BOLD, 20);

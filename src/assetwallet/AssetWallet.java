@@ -47,7 +47,7 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
  * 
  */
 public class AssetWallet  {
-    String version = "0.0.1";
+    String version = "0.0.2";
 
     JPanel headerPanel;
     JPanel mainPanel;
@@ -781,8 +781,9 @@ public class AssetWallet  {
         JPanel oct = new JPanel();
         AppUI.noOpaque(oct);
         
-        JLabel txt = new JLabel("<html><div style='width: 720px'>" + ps.exportedFile + "</div></html>");
+        JLabel txt = new JLabel("<html><div style='width: 720px; text-align:center'>" + ps.exportedFile + "</div></html>");
         AppUI.setFont(txt, 16);
+        AppUI.alignCenter(txt);
         oct.add(txt);
         
         
@@ -832,7 +833,14 @@ public class AssetWallet  {
         JPanel oct = new JPanel();
         AppUI.noOpaque(oct);
         
-        String dir = new File(ps.exportedFile).getParent();
+        if (ps.exportedFile == null)
+            return;
+        
+        File fileObj = new File(ps.exportedFile);
+        if (fileObj == null) 
+            return;
+            
+        String dir = fileObj.getParent();
         if (dir == null)
             return;
         
@@ -936,15 +944,15 @@ public class AssetWallet  {
         AppUI.setMetaItem(meta, jp, "publisher", "Publisher");
         AppUI.setMetaItem(meta, jp, "series_name", "Series");
         AppUI.setMetaItem(meta, jp, "date_of_creation", "Date");
-        AppUI.setMetaItem(meta, jp, "genre", "Genre");
+        //AppUI.setMetaItem(meta, jp, "genre", "Genre");
         AppUI.setMetaItem(meta, jp, "subject", "Subject");
         AppUI.setMetaItem(meta, jp, "category", "Category");
         AppUI.setMetaItem(meta, jp, "description", "<br>");
         
-        
+        String dir = AppCore.getUserDir(Config.DIR_EXPORT, Config.DEFAULT_NAME);
         JPanel bp = getOneButtonPanelCustom("Export", new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                sm.startExporterService(ps.curAsset, new CallbackInterface() {
+                sm.startExporterService(ps.curAsset, dir, new CallbackInterface() {
                     public void callback(Object o) {   
                         ExporterResult eresult = (ExporterResult) o;
                         if (eresult.status == ExporterResult.STATUS_ERROR) {
@@ -1086,10 +1094,50 @@ public class AssetWallet  {
                 pbar.setMinimum(0);
                 
                 for (int i = 0; i < ps.assets.length; i++) {
+                    int status = ps.assets[i].getSyncStatus();
+                    while (status == Asset.SYNC_STATUS_DOING || status == Asset.SYNC_STATUS_NONE) {
+                        status = ps.assets[i].getSyncStatus();
+                        pbarText.setText("Waiting for " + ps.assets[i].getFileName() + " syncing");
+                        pbarText.repaint();
+                        System.out.println("waiting...");
+                        try {
+                            Thread.sleep(2500);
+                        } catch (InterruptedException e) {}
+                    }
+                }
+                
+                pbarText.setText("Exporting assets ...");
+                pbarText.repaint();
+                
+                for (int i = 0; i < ps.assets.length; i++) {
+                    int status = ps.assets[i].getSyncStatus();
+                    System.out.println("s="+ status);
+                    if (status != Asset.SYNC_STATUS_DONE_OK) {
+                        ps.errText = "Asset " + ps.assets[i].getFileName() + " can't be exported because it failed to sync. Stopped";
+                        ps.currentScreen = ProgramState.SCREEN_EXPORT_ALL_DONE;
+                        showScreen();
+                        return;                       
+                    }
+                }
+
+                String dir = AppCore.getUserDir(Config.DIR_EXPORT, Config.DEFAULT_NAME);
+                for (int i = 0; i < ps.assets.length; i++) {
+                    String filename = ps.assets[i].getMyFilename();
+                    filename = dir + File.separator + filename;
+                    File f = new File(filename);
+                    if (f.exists()) {
+                        ps.errText = "File " + filename + " already exists";
+                        ps.currentScreen = ProgramState.SCREEN_EXPORT_ALL_DONE;
+                        showScreen();
+                        return;
+                    }
+                }
+
+                for (int i = 0; i < ps.assets.length; i++) {
                     final int fi = i;
           
                     ps.asyncCanGo = false;
-                    sm.startExporterService(ps.assets[i], new CallbackInterface() {
+                    sm.startExporterService(ps.assets[i], dir, new CallbackInterface() {
                         public void callback(Object o) {   
                             ExporterResult eresult = (ExporterResult) o;
                             if (eresult.status == ExporterResult.STATUS_ERROR) {
@@ -1119,11 +1167,7 @@ public class AssetWallet  {
                     pbar.setValue(i);
                     pbarText.repaint();
                     pbar.repaint();
-                    
-                    
-                    
-                    
-                    
+        
                 };
  
                 ps.currentScreen = ProgramState.SCREEN_EXPORT_ALL_DONE;
@@ -1363,8 +1407,7 @@ public class AssetWallet  {
                     } catch (InterruptedException e) {}
 
                 }
-          
-                
+       
                 sm.startShowCoinsService(assets, new CallbackInterface() {
                     public void callback(Object o) {   
                         ShowCoinsResult scresult = (ShowCoinsResult) o;
@@ -1394,6 +1437,7 @@ public class AssetWallet  {
                                 if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_ERROR) {
                                     jl.setText("Error");
                                     pbar.setVisible(false);
+                                    fassets[idx].setSyncStatus(Asset.SYNC_STATUS_DONE_ERROR);
                                     return;
                                 } else if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_FINISHED) {
                                     Properties meta = scresult.getMeta(idx);
@@ -1401,11 +1445,13 @@ public class AssetWallet  {
                                     
                                     setAssetBlock(fassets[idx], meta, img);
                                     fassets[idx].setData(img, meta);
+                                    fassets[idx].setSyncStatus(Asset.SYNC_STATUS_DONE_OK);
                                             
                                 } else if (scresult.getStatus(idx) == ShowCoinsResult.STATUS_PROCESSING) {
                                     int progress = (int) (((double) scresult.getProgress(idx) 
                                             / (double) scresult.getProgressTotal(idx)) * 100);
                                     jl.setText(scresult.getOperation(idx) + " " + progress + "%");
+                                    fassets[idx].setSyncStatus(Asset.SYNC_STATUS_DOING);
                                 }
                           //  }
                             /*
@@ -1960,7 +2006,7 @@ public class AssetWallet  {
         AppUI.noOpaque(ct);
         rightPanel.add(ct);
         
-        JLabel ltitle = AppUI.getTitle("Help & Support");   
+        JLabel ltitle = AppUI.getTitle("Instructions and Support");   
         ct.add(ltitle);
        // AppUI.hr(ct, 20);
             
@@ -1996,7 +2042,7 @@ public class AssetWallet  {
         c.gridx = GridBagConstraints.RELATIVE;
         c.gridy = y;
 
-        String urlName = "http://cloudcoinconsortium.com/use.html";
+        String urlName = "https://ecdenergy.com/ecd-wallet-user-guides/";
         JLabel l = AppUI.getHyperLink(urlName, urlName, 0);
         gridbag.setConstraints(l, c); 
         gct.add(l);
@@ -2004,9 +2050,9 @@ public class AssetWallet  {
         y++;
         
         l = new JLabel("<html><div style='width:460px; text-align:center'><br>"
-                + "Support: 9 AM to 3 AM California Time (PST)<br> "
-                + "Tel: +1(530)762-1361 <br>"
-                + "Email: Support@cloudcoinmail.com</div></html>");
+        //        + "Support: 9 AM to 3 AM California Time (PST)<br> "
+        //        + "Tel: +1(530)762-1361 <br>"
+                + "support@ecdenergy.com</div></html>");
         c.insets = new Insets(0, 0, 0, 0); 
         AppUI.alignCenter(l);
         c.gridx = GridBagConstraints.RELATIVE;
@@ -2017,6 +2063,7 @@ public class AssetWallet  {
         
         y++;
         
+        /*
         l = new JLabel("<html><div style='width:480px; text-align:center; font-size: 14px'>"
                 + "(Secure if you get a free encrypted email account at ProtonMail.com)</div></html>");
       
@@ -2101,7 +2148,7 @@ public class AssetWallet  {
         gct.add(l);
         
         y++;
-
+*/
         ct.add(gct);        
     }
 

@@ -185,13 +185,13 @@ public class ServantManager {
         return true;
     }
     
-    public void startExporterService(Asset asset, CallbackInterface cb) {
+    public void startExporterService(Asset asset, String dir, CallbackInterface cb) {
         if (sr.isRunning("Exporter")) {
             return;
         }
         
 	Exporter e = (Exporter) sr.getServant("Exporter");
-	e.launch(Config.TYPE_PNG, asset, Config.TAG_RANDOM, Config.DEFAULT_EXPORT_DIR, cb);
+	e.launch(Config.TYPE_PNG, asset, Config.TAG_RANDOM, dir, cb);
     }
 
     public void startEchoService(CallbackInterface cb) {

@@ -39,6 +39,13 @@ public class Asset {
         
         String ls = System.getProperty("line.separator");
 
+        final public static int SYNC_STATUS_NONE = 0;
+        final public static int SYNC_STATUS_DOING = 1;
+        final public static int SYNC_STATUS_DONE_OK = 2;
+        final public static int SYNC_STATUS_DONE_ERROR = 3;
+        
+        int syncStatus; 
+        
 	public void initCommon() {
 		pans = new String[RAIDA.TOTAL_RAIDA_COUNT];
 		detectStatus = new int[RAIDA.TOTAL_RAIDA_COUNT];
@@ -89,6 +96,8 @@ public class Asset {
 		if (pans.length != RAIDA.TOTAL_RAIDA_COUNT)
                 	throw(new JSONException("Wrong pan count"));
             }
+            
+            syncStatus = Asset.SYNC_STATUS_NONE;
         }
 
 	public Asset(int nn, int sn) {
@@ -100,10 +109,14 @@ public class Asset {
 
 		initCommon();
 
+                this.syncStatus = Asset.SYNC_STATUS_NONE;
+                
 		for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++)
 			detectStatus[i] = STATUS_UNTRIED;
 	}
 
+        
+        
 	public Asset(int nn, int sn, String[] ans, String ed, String[] aoid, String tag) {
 		this.nn = nn;
 		this.sn = sn;
@@ -118,7 +131,15 @@ public class Asset {
 		for (int i = 0; i < RAIDA.TOTAL_RAIDA_COUNT; i++)
 			detectStatus[i] = STATUS_UNTRIED;
 	}
-
+        
+        public void setSyncStatus(int status) {
+            syncStatus = status;
+        }
+        
+        public int getSyncStatus() {
+            return syncStatus;
+        }
+        
         public Properties getMeta() {
             return this.meta;
         }
@@ -159,6 +180,24 @@ public class Asset {
         
         public Object getPrivate() {
             return this.privateData;
+        }
+        
+        public int getTranslatedSN() {
+            int translate_sn;
+            try {
+                translate_sn = Integer.parseInt(AppCore.getMetaItem(meta, "translate_sn"));   
+            } catch (NumberFormatException e) {
+                translate_sn = 0;
+            }
+             
+            return sn - translate_sn + 1;
+        }
+        
+        public String getMyFilename() {
+            int n = getTranslatedSN();
+            String r = AppCore.getExpstring(n);
+            
+            return r + ".png";
         }
         
 	public static String[] toStringArray(JSONArray array) {
