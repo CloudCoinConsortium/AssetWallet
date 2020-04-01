@@ -47,7 +47,7 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
  * 
  */
 public class AssetWallet  {
-    String version = "0.0.2";
+    String version = "0.0.3";
 
     JPanel headerPanel;
     JPanel mainPanel;
@@ -786,7 +786,7 @@ public class AssetWallet  {
         AppUI.alignCenter(txt);
         oct.add(txt);
         
-        
+        System.out.println("f="+ps.exportedFile);
         if (Desktop.isDesktopSupported()) {
             try {
                 String dir = new File(ps.exportedFile).getParent();
@@ -2470,7 +2470,7 @@ public class AssetWallet  {
 
             EventQueue.invokeLater(new Runnable() {         
                 public void run() {
-                    pbarText.setText("Recovering lost coins ...");
+                    pbarText.setText("Recovering lost Assets ...");
                     pbarText.repaint();
                 }
             });

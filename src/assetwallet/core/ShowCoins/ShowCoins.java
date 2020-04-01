@@ -1,5 +1,6 @@
 package assetwallet.core.ShowCoins;
 
+import assetwallet.AppUI;
 import org.json.JSONException;
 
 import java.io.File;
@@ -13,11 +14,18 @@ import assetwallet.core.Config;
 import assetwallet.core.GLogger;
 import assetwallet.core.RAIDA;
 import assetwallet.core.Servant;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Map;
 import java.util.Properties;
+import javax.imageio.ImageIO;
 
 public class ShowCoins extends Servant {
     String ltag = "ShowCoins";
@@ -217,9 +225,7 @@ public class ShowCoins extends Servant {
 
         metadata = new String(bytes);
         metadata = "[meta]\n" + metadata;
-
-        saveData(asset, metadata, sdataBytes);
-        
+  
         Map<String, Properties> data;
         try {
             data = AppCore.parseINI(new StringReader(metadata));
@@ -235,12 +241,81 @@ public class ShowCoins extends Servant {
             return;
         }
         
+        asset.setData(sdataBytes, meta);
+        sdataBytes = appendText(asset, sdataBytes, meta);
+        if (sdataBytes == null) {
+            logger.error(ltag, "Failed to append text on the Image");
+            globalResult.statuses[idx].status = ShowCoinsResult.STATUS_ERROR;
+            return;
+        }
+ 
+        saveData(asset, metadata, sdataBytes);
+        
         globalResult.statuses[idx].status = ShowCoinsResult.STATUS_FINISHED;
         globalResult.statuses[idx].meta = meta;
         globalResult.statuses[idx].data = sdataBytes;
 
     }
 
+    public byte[] appendText(Asset asset, byte[] obytes, Properties meta) {
+        String ls = System.getProperty("line.separator");
+        String data;
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("{" + ls + "\t\"celebrium\": [");
+        sb.append(asset.getSimpleJson());
+        sb.append("]" + ls + "}");
+        data = sb.toString();
+        
+        byte[] bytes = writeText(asset, obytes);
+        if (bytes == null) {
+            logger.error(ltag, "Failed to write text on the image");
+            return null;
+        }
+        
+        int idx = AppCore.basicPngChecks(bytes);
+        if (idx == -1) {
+            logger.error(ltag, "PNG checks failed");
+            return null;
+        }
+         
+        logger.info(ltag, "Loaded, bytes: " + bytes.length);
+        int dl = data.length();
+        int chunkLength = dl + 12;
+        logger.debug(ltag, "data length " + dl);
+        byte[] nbytes = new byte[bytes.length + chunkLength];
+        for (int i = 0; i < idx + 4; i++) {
+            nbytes[i] = bytes[i];
+        }
+
+        // Setting up the chunk
+        // Set length
+        AppCore.setUint32(nbytes, idx + 4, dl);
+        
+        // Header cLDc
+        nbytes[idx + 4 + 4] = 0x63;
+        nbytes[idx + 4 + 5] = 0x4c;
+        nbytes[idx + 4 + 6] = 0x44;
+        nbytes[idx + 4 + 7] = 0x63;
+                
+        for (int i = 0; i < dl; i++) {
+            nbytes[i + idx + 4 + 8] = (byte) data.charAt(i);
+        }
+
+        // crc
+        long crc32 = AppCore.crc32(nbytes, idx + 8, dl + 4);
+        AppCore.setUint32(nbytes, idx + 8 + dl + 4, crc32);
+        logger.debug(ltag, "crc32 " + crc32);
+        
+        // Rest data
+        for (int i = 0; i < bytes.length - idx - 4; i++) {
+            nbytes[i + idx + 8 + dl + 4 + 4] = bytes[i + idx + 4];
+        }
+
+        return nbytes;
+    }
+    
+    
     public boolean queryMirror(Asset asset, int idx, String[] collect, String[] bdata, int mirrorNum) {
         StringBuilder sb;      
         String mirror;
@@ -370,22 +445,10 @@ public class ShowCoins extends Servant {
     public void saveData(Asset asset, String metadata, byte[] bytes) {
         String folder = AppCore.getUserDir(Config.DIR_GALLERY, user);
         
-        String basename = new File(asset.originalFile).getName();
-        String imageName = basename + ".jpg";
-        String metaName = basename + ".meta";
+        asset.clean(user, false);
         
-        String imgPath = folder + File.separator + imageName;
-        String metaPath = folder + File.separator + metaName;
-        
-        File fimg = new File(imgPath);
-        File fmeta = new File(metaPath);
-                
-        if (fimg.exists())
-            fimg.delete();
-        
-        if (fmeta.exists())
-            fmeta.delete();
-        
+        String metaPath = asset.getMetaPath(user);
+        String imgPath = asset.getImgPath(user);
         
         logger.debug(ltag, "Saving meta " + metaPath);
         if (!AppCore.saveFile(metaPath, metadata)) {
@@ -399,18 +462,14 @@ public class ShowCoins extends Servant {
     }
     
     public boolean tryCache(Asset asset) {
-        String folder = AppCore.getUserDir(Config.DIR_GALLERY, user);
-        
-        String basename = new File(asset.originalFile).getName();
-        String imageName = basename + ".jpg";
-        String metaName = basename + ".meta";
-        
-        String imgPath = folder + File.separator + imageName;
-        String metaPath = folder + File.separator + metaName;
+       
+        String imgPath = asset.getImgPath(user);
+        String metaPath = asset.getMetaPath(user);
         
         File fimg = new File(imgPath);
         File fmeta = new File(metaPath);
                 
+        logger.debug(ltag, "Trying cache: " + imgPath + " m= " +metaPath);
         if (!fimg.exists() || !fmeta.exists()) 
             return false;
        
@@ -442,4 +501,69 @@ public class ShowCoins extends Servant {
         return true;
     }
     
+    public byte[] writeText(Asset asset, byte[] bytes) {
+        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+        BufferedImage bi;
+        try {
+            bi = ImageIO.read(bais);
+        } catch (IOException e) {
+            logger.debug(ltag, "Failed to convert bytes to Image: " + e.getMessage());
+            return null;
+        }
+        
+        Properties meta = asset.getMeta();
+        if (meta == null) {
+            logger.debug(ltag, "No meta found");
+            return null;
+        }
+
+        String fontSize = AppCore.getMetaItem(meta, "font_size");
+        if (fontSize == null)
+            fontSize = "20";
+
+        String fontFamily = AppCore.getMetaItem(meta, "font_family");
+        if (fontFamily == null)
+            fontFamily = "Arial Black";
+        
+        String fontColor = AppCore.getMetaItem(meta, "font_color");
+        if (fontColor == null)
+            fontColor = "FFFFFF";
+        
+        int x, y;
+        try {
+            
+            x = Integer.parseInt(AppCore.getMetaItem(meta, "text_location_x"));
+            y = Integer.parseInt(AppCore.getMetaItem(meta, "text_location_y"));
+        } catch (NumberFormatException e) {
+            logger.debug(ltag, "Failed to parse location in Meta. Falling back to default");
+            x = y = 0;
+        }
+           
+        int sn = asset.getTranslatedSN();      
+        String r = AppCore.getExpstring(sn);
+        
+        logger.debug(ltag, "Font " + fontFamily + " " + fontSize + ", " + fontColor + " position: " + x + "," + y);
+        
+        
+        Color color = AppUI.hex2Rgb("#" + fontColor);
+        Font font = new Font(fontFamily, Font.BOLD, 20);
+        String text = r;
+       
+        Graphics graphics = bi.getGraphics();
+        //graphics.setColor(Color.LIGHT_GRAY);
+        //graphics.fillRect(0, 0, 200, 50);
+        graphics.setColor(color);
+        graphics.setFont(font);
+        graphics.drawString(text, x, y);
+        
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            ImageIO.write(bi, "png", baos);
+        } catch (IOException e) {
+            logger.debug(ltag, "Failed to convert Image to bytes: " + e.getMessage());
+            return null;
+        }
+        
+        return baos.toByteArray();
+    }
 }

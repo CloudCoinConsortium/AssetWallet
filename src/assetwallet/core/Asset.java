@@ -194,6 +194,9 @@ public class Asset {
         }
         
         public String getMyFilename() {
+            if (meta == null)
+                return "Unsynchronized.png";
+            
             int n = getTranslatedSN();
             String r = AppCore.getExpstring(n);
             
@@ -456,27 +459,45 @@ public class Asset {
 		edHex += Integer.toHexString(year);
 	}
 
-        
-    public void clean(String user) {
-        if (originalFile == null)
-            return;
-        
+     
+    public String getItemPath(String user, String extension) {
         File f = new File(originalFile);
+        String basename = f.getName();
         
         String folder = AppCore.getUserDir(Config.DIR_GALLERY, user);
-        String basename = f.getName();
-        String imageName = basename + ".jpg";
-        String metaName = basename + ".meta";
-        String imgPath = folder + File.separator + imageName;
-        String metaPath = folder + File.separator + metaName;       
-        File fimg = new File(imgPath);
-        File fmeta = new File(metaPath);                
+        String itemName = basename + "." + extension;
+        
+        String rv = "" + folder + File.separator + itemName;
+        
+        return rv;
+    }
+    
+    public String getMetaPath(String user) {
+        return getItemPath(user, "meta");
+    }
+    
+    public String getImgPath(String user) {
+        return getItemPath(user, "png");
+    }
+        
+    public void clean(String user) {
+        clean(user, true);
+    }
+    public void clean(String user, boolean full) {
+        if (originalFile == null)
+            return;
+   
+        File fimg = new File(getImgPath(user));
+        File fmeta = new File(getMetaPath(user));                
         if (fimg.exists()) 
             fimg.delete();
         
         if (fmeta.exists()) 
             fmeta.delete();
         
-        f.delete();
+        if (full) {
+            File f = new File(originalFile);
+            f.delete();
+        }
     }
 }
