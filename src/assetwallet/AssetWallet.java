@@ -47,7 +47,7 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
  * 
  */
 public class AssetWallet  {
-    String version = "0.0.3";
+    String version = "0.0.4";
 
     JPanel headerPanel;
     JPanel mainPanel;
@@ -940,14 +940,14 @@ public class AssetWallet  {
         };*/
 
         
-        //AppUI.setMetaItem(meta, jp, "id", "ID #");
+        AppUI.setItem(jp, "ID#", "" + ps.curAsset.getTranslatedSN());
         AppUI.setMetaItem(meta, jp, "publisher", "Publisher");
         AppUI.setMetaItem(meta, jp, "series_name", "Series");
-        AppUI.setMetaItem(meta, jp, "date_of_creation", "Date");
+        AppUI.setMetaItem(meta, jp, "date_of_creation", "Date Created");
         //AppUI.setMetaItem(meta, jp, "genre", "Genre");
         AppUI.setMetaItem(meta, jp, "subject", "Subject");
         AppUI.setMetaItem(meta, jp, "category", "Category");
-        AppUI.setMetaItem(meta, jp, "description", "<br>");
+        AppUI.setMetaItem(meta, jp, "description", "Description<br>");
         
         String dir = AppCore.getUserDir(Config.DIR_EXPORT, Config.DEFAULT_NAME);
         JPanel bp = getOneButtonPanelCustom("Export", new ActionListener() {

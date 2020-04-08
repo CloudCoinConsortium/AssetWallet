@@ -759,6 +759,17 @@ public class AppUI {
         }
     }
     
+    public static void setItem(JPanel jp, String key, String value) {
+        JLabel jl = new JLabel();
+        AppUI.setFont(jl, 16);
+        jl.setText("<html><b>" + key + "</b> " + value + "</html>");
+        AppUI.setMargin(jl, 10, 0, 0, 0);
+        AppUI.alignCenter(jl);
+        jp.add(jl);
+        
+    }
+    
+    
     public static Color hex2Rgb(String colorStr) {
         return new Color(
             Integer.valueOf( colorStr.substring( 1, 3 ), 16 ),
