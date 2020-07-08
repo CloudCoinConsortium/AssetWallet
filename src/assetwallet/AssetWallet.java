@@ -47,7 +47,7 @@ import javax.swing.plaf.basic.BasicScrollBarUI;
  * 
  */
 public class AssetWallet  {
-    String version = "0.0.4";
+    String version = "0.0.6";
 
     JPanel headerPanel;
     JPanel mainPanel;
@@ -56,7 +56,7 @@ public class AssetWallet  {
     
     JPanel lwrapperPanel;
     
-    String ltag = "Advanced Client";
+    String ltag = "ECD Vault";
     JLabel totalText;
     
     //Sets the default screen width and height
@@ -199,7 +199,7 @@ public class AssetWallet  {
     
     public void fillHeaderPanel() {
         //fills header with objects
-        Bgpanel p = new Bgpanel("resources/ECDTokenVaultBanner_WithText.png");
+        Bgpanel p = new Bgpanel("resources/ECDVaultBanner_WithText_V3.png");
         //JPanel p = new JPanel();
         AppUI.noOpaque(p);
         GridBagLayout gridbag = new GridBagLayout();
@@ -2042,7 +2042,7 @@ public class AssetWallet  {
         c.gridx = GridBagConstraints.RELATIVE;
         c.gridy = y;
 
-        String urlName = "https://ecdenergy.com/ecd-wallet-user-guides/";
+        String urlName = "https://ecdenergy.com/ecd-vault-user-guides/";
         JLabel l = AppUI.getHyperLink(urlName, urlName, 0);
         gridbag.setConstraints(l, c); 
         gct.add(l);
@@ -2159,7 +2159,7 @@ public class AssetWallet  {
         JPanel subInnerCore = AppUI.createRoundedPanel(corePanel, AppUI.getColor4(), 60, 20);
   
         // Title
-        JLabel text = new JLabel("ECD Token Vault");
+        JLabel text = new JLabel("ECD Vault");
         AppUI.alignCenter(text);
         AppUI.setBoldFont(text, 24);
         subInnerCore.add(text);

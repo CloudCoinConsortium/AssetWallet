@@ -393,7 +393,7 @@ public class AppUI {
     public static JFrame getMainFrame(String version) {
         JFrame frame = new JFrame();
         
-        frame.setTitle("ECD Token Vault " + version);
+        frame.setTitle("ECD Vault " + version);
         frame.setLayout(new BorderLayout());
         frame.setSize(new Dimension(tw, th));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
